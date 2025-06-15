@@ -1,27 +1,42 @@
-# MCP SSE Server
+# MCP Hello World Servers
 
-A full-featured **Model Context Protocol (MCP)** server implementation using **Server-Sent Events (SSE)** with example HTTP POST tools.
+A collection of **Model Context Protocol (MCP)** server implementations demonstrating different streaming approaches with example HTTP POST tools.
 
 ## 🚀 Features
 
 - **SSE-based MCP Server**: Real-time communication using Server-Sent Events
+- **Streamable HTTP MCP Server**: Real-time communication using HTTP chunked transfer encoding
 - **HTTP POST Tool**: Generic tool for making POST requests to any API
 - **Weather API Tool**: Example integration with OpenWeatherMap API
 - **Post Creation Tool**: Example using JSONPlaceholder API
 - **Web Client**: Interactive HTML client for testing
-- **Test Suite**: Automated testing scripts
+- **Test Suite**: Automated testing scripts for both servers
 - **Error Handling**: Comprehensive error handling and validation
+
+## 📊 Server Comparison
+
+| Feature | SSE Server (Port 3000) | Streamable HTTP Server (Port 3001) |
+|---------|------------------------|-------------------------------------|
+| **Protocol** | Server-Sent Events | HTTP Chunked Transfer Encoding |
+| **Content-Type** | `text/event-stream` | `application/x-ndjson` |
+| **Streaming Format** | SSE event format | Newline Delimited JSON |
+| **Tools** | Same tools | Same tools |
+| **Performance** | Optimized for browsers | More flexible for various clients |
+| **Browser Support** | Built-in EventSource | Manual streaming handling |
 
 ## 🏗️ Architecture
 
 ```
-mcp-sse-server/
+mcp-hello-world/
 ├── src/
-│   ├── server.js           # Main Express server with SSE endpoints
-│   └── mcp-server.js       # MCP server implementation with tools
+│   ├── sse-server.js       # SSE-based MCP server (port 3000)
+│   ├── streamable-server.js # Streamable HTTP MCP server (port 3001)
+│   └── mcp-server.js       # Shared MCP server implementation with tools
 ├── examples/
-│   ├── client.html         # Interactive web client
-│   └── test-tools.js       # Automated testing script
+│   ├── client.html         # Interactive web client (SSE)
+│   ├── test-sse.js         # Automated testing script (SSE)
+│   ├── test-streamable.js  # Automated testing script (Streamable HTTP)
+│   └── test-tools.js       # Legacy test file (kept for compatibility)
 ├── package.json
 └── README.md
 ```
@@ -30,8 +45,8 @@ mcp-sse-server/
 
 1. **Clone or create the project**:
    ```bash
-   mkdir mcp-sse-server
-   cd mcp-sse-server
+   mkdir mcp-hello-world
+   cd mcp-hello-world
    ```
 
 2. **Install dependencies**:
@@ -39,24 +54,43 @@ mcp-sse-server/
    npm install
    ```
 
-3. **Start the server**:
+3. **Start the servers**:
+   
+   **SSE Server (port 3000)**:
    ```bash
    npm start
+   # or explicitly
+   npm run start:sse
    # or for development with auto-reload
    npm run dev
+   # or explicitly
+   npm run dev:sse
+   ```
+   
+   **Streamable HTTP Server (port 3001)**:
+   ```bash
+   npm run start:streamable
+   # or for development with auto-reload
+   npm run dev:streamable
    ```
 
-The server will start on `http://localhost:3000`
+Both servers can run simultaneously on different ports.
 
 ## 📡 API Endpoints
 
-### SSE Endpoint
+### SSE Server (Port 3000)
 - **GET** `/mcp/sse` - Server-Sent Events stream for real-time communication
-
-### HTTP Endpoints
 - **GET** `/health` - Health check endpoint
 - **GET** `/mcp/tools` - List available tools
 - **POST** `/mcp/call-tool` - Execute a tool
+
+### Streamable HTTP Server (Port 3001)
+- **GET** `/mcp/stream` - HTTP chunked streaming (raw format)
+- **GET** `/mcp/stream-simple` - HTTP chunked streaming (NDJSON format)
+- **POST** `/mcp/call-tool-stream` - Execute a tool with streaming response
+- **POST** `/mcp/call-tool` - Execute a tool (standard response)
+- **GET** `/mcp/tools` - List available tools
+- **GET** `/health` - Health check endpoint
 
 ## 🔧 Available Tools
 
@@ -134,7 +168,24 @@ Creates posts using JSONPlaceholder API.
 ## 🧪 Testing
 
 ### Automated Testing
-Run the test suite:
+
+**SSE Server Testing**:
+```bash
+npm test
+# or explicitly
+npm run test:sse
+# or directly
+node examples/test-sse.js
+```
+
+**Streamable HTTP Server Testing**:
+```bash
+npm run test:streamable
+# or directly
+node examples/test-streamable.js
+```
+
+**Legacy Testing** (for backward compatibility):
 ```bash
 node examples/test-tools.js
 ```
@@ -168,6 +219,35 @@ curl -X POST http://localhost:3000/mcp/call-tool \
 **Test SSE Connection**:
 ```bash
 curl -N http://localhost:3000/mcp/sse
+```
+
+### Streamable HTTP Server Testing
+
+**Health Check**:
+```bash
+curl http://localhost:3001/health
+```
+
+**List Tools**:
+```bash
+curl http://localhost:3001/mcp/tools
+```
+
+**Test Streaming Tool Call**:
+```bash
+curl -X POST http://localhost:3001/mcp/call-tool-stream \
+  -H "Content-Type: application/json" \
+  -d '{
+    "tool": "get_weather",
+    "parameters": {
+      "city": "San Francisco"
+    }
+  }'
+```
+
+**Test Simple Stream Connection**:
+```bash
+curl -N http://localhost:3001/mcp/stream-simple
 ```
 
 ## 🔄 MCP Protocol Implementation
@@ -263,10 +343,41 @@ The web client includes:
 - **Error Handling**: Sensitive information is not exposed in errors
 - **CORS**: Configured for development (adjust for production)
 
+## 🔄 Streaming Approaches Explained
+
+### Server-Sent Events (SSE)
+- **Format**: Text-based event stream with `data:` prefixes
+- **Browser Support**: Native `EventSource` API
+- **Use Case**: Best for browser-based real-time applications
+- **Reconnection**: Automatic reconnection handling
+- **Example**: `data: {"type": "message", "content": "hello"}\n\n`
+
+### HTTP Chunked Transfer Encoding
+- **Format**: Newline Delimited JSON (NDJSON)
+- **Client Support**: Manual stream processing required
+- **Use Case**: More flexible for various client types (servers, CLI tools)
+- **Control**: Full control over chunk processing
+- **Example**: `{"type": "message", "content": "hello"}\n`
+
+### When to Use Which?
+
+**Choose SSE** when:
+- Building browser-based applications
+- Need automatic reconnection
+- Want built-in browser support
+
+**Choose Streamable HTTP** when:
+- Building server-to-server communication
+- Need custom streaming logic
+- Working with non-browser clients
+- Want more control over the streaming format
+
 ## 📚 Protocol References
 
 - [Model Context Protocol Specification](https://modelcontextprotocol.io/)
 - [Server-Sent Events Standard](https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events)
+- [HTTP Chunked Transfer Encoding](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Transfer-Encoding)
+- [Newline Delimited JSON](http://ndjson.org/)
 
 ## 🤝 Contributing
 

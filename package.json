@@ -2,13 +2,19 @@
   "name": "mcp-sse-server",
   "version": "1.0.0",
   "description": "MCP Server with SSE and HTTP POST tool example",
-  "main": "src/server.js",
+  "main": "src/sse-server.js",
   "type": "module",
   "scripts": {
-    "start": "node src/server.js",
-    "dev": "node --watch src/server.js",
+    "start": "node src/sse-server.js",
+    "start:sse": "node src/sse-server.js",
+    "start:streamable": "node src/streamable-server.js",
+    "dev": "node --watch src/sse-server.js",
+    "dev:sse": "node --watch src/sse-server.js",
+    "dev:streamable": "node --watch src/streamable-server.js",
     "demo": "node demo.js",
-    "test": "node examples/test-tools.js"
+    "test": "node examples/test-sse.js",
+    "test:sse": "node examples/test-sse.js",
+    "test:streamable": "node examples/test-streamable.js"
   },
   "dependencies": {
     "express": "^4.18.2",
