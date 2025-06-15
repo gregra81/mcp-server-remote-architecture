@@ -1,9 +1,10 @@
-import express from 'express';
+import express, { Express, Request, Response } from 'express';
 import cors from 'cors';
 import { MCPServer } from './mcp-server.js';
+import type { MCPToolCall, MCPToolResponse } from './types/mcp.js';
 
-const app = express();
-const port = process.env.PORT || 3000;
+const app: Express = express();
+const port: number = Number(process.env.PORT) || 3000;
 
 // Middleware
 app.use(cors());
@@ -13,7 +14,7 @@ app.use(express.json());
 const mcpServer = new MCPServer();
 
 // SSE endpoint for MCP communication
-app.get('/mcp/sse', (req, res) => {
+app.get('/mcp/sse', (req: Request, res: Response): void => {
   // Set up SSE headers
   res.writeHead(200, {
     'Content-Type': 'text/event-stream',
@@ -24,7 +25,7 @@ app.get('/mcp/sse', (req, res) => {
   });
 
   // Handle client connection
-  const clientId = Date.now().toString();
+  const clientId: string = Date.now().toString();
   console.log(`Client ${clientId} connected to MCP SSE`);
 
   // Send initial connection message
@@ -59,42 +60,48 @@ app.get('/mcp/sse', (req, res) => {
 });
 
 // HTTP endpoint for MCP tool calls
-app.post('/mcp/call-tool', async (req, res) => {
+app.post('/mcp/call-tool', async (req: Request, res: Response): Promise<void> => {
   try {
-    const { tool, parameters } = req.body;
+    const { tool, parameters }: MCPToolCall = req.body;
     
     if (!tool || !parameters) {
-      return res.status(400).json({
+      res.status(400).json({
         error: 'Missing tool or parameters'
       });
+      return;
     }
 
     console.log(`Executing tool: ${tool} with parameters:`, parameters);
     
     const result = await mcpServer.callTool(tool, parameters);
     
-    res.json({
+    const response: MCPToolResponse = {
       success: true,
       result: result
-    });
-  } catch (error) {
+    };
+
+    res.json(response);
+  } catch (error: any) {
     console.error('Tool execution error:', error);
-    res.status(500).json({
+    
+    const errorResponse: MCPToolResponse = {
       success: false,
       error: error.message
-    });
+    };
+
+    res.status(500).json(errorResponse);
   }
 });
 
 // Get available tools
-app.get('/mcp/tools', (req, res) => {
+app.get('/mcp/tools', (req: Request, res: Response): void => {
   res.json({
     tools: mcpServer.getTools()
   });
 });
 
 // Health check endpoint
-app.get('/health', (req, res) => {
+app.get('/health', (req: Request, res: Response): void => {
   res.json({
     status: 'healthy',
     timestamp: new Date().toISOString(),
@@ -103,7 +110,7 @@ app.get('/health', (req, res) => {
 });
 
 // Start server
-app.listen(port, () => {
+app.listen(port, (): void => {
   console.log(`🚀 MCP SSE Server running on port ${port}`);
   console.log(`📡 SSE endpoint: http://localhost:${port}/mcp/sse`);
   console.log(`🔧 Tool call endpoint: http://localhost:${port}/mcp/call-tool`);
