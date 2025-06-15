@@ -1,0 +1,29 @@
+{
+  "name": "mcp-sse-server",
+  "version": "1.0.0",
+  "description": "MCP Server with SSE and HTTP POST tool example",
+  "main": "src/server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "demo": "node demo.js",
+    "test": "node examples/test-tools.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "axios": "^1.6.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2"
+  },
+  "keywords": [
+    "mcp",
+    "server-sent-events",
+    "sse",
+    "http-api"
+  ],
+  "author": "",
+  "license": "MIT"
+} 
