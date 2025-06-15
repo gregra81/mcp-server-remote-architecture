@@ -1,22 +1,17 @@
 #!/usr/bin/env node
-
 import axios from 'axios';
-
 const SERVER_URL = 'http://localhost:3000';
-
 /**
- * Test the MCP SSE server tools
+ * Test the MCP server tools
  */
-async function testMCPSSEServer() {
-    console.log('🧪 Testing MCP SSE Server Tools\n');
-
+async function testMCPServer() {
+    console.log('🧪 Testing MCP Server Tools\n');
     try {
         // Test 1: Health check
         console.log('1️⃣ Testing health endpoint...');
         const healthResponse = await axios.get(`${SERVER_URL}/health`);
         console.log('✅ Health check:', healthResponse.data);
         console.log();
-
         // Test 2: Get available tools
         console.log('2️⃣ Getting available tools...');
         const toolsResponse = await axios.get(`${SERVER_URL}/mcp/tools`);
@@ -25,7 +20,6 @@ async function testMCPSSEServer() {
             console.log(`   - ${tool.name}: ${tool.description}`);
         });
         console.log();
-
         // Test 3: HTTP POST tool with httpbin.org
         console.log('3️⃣ Testing HTTP POST tool...');
         const httpPostResult = await axios.post(`${SERVER_URL}/mcp/call-tool`, {
@@ -33,19 +27,18 @@ async function testMCPSSEServer() {
             parameters: {
                 url: 'https://httpbin.org/post',
                 data: {
-                    message: 'Hello from MCP SSE test!',
+                    message: 'Hello from MCP test!',
                     timestamp: new Date().toISOString(),
                     test: true
                 },
                 headers: {
-                    'User-Agent': 'MCP-SSE-Test-Client/1.0'
+                    'User-Agent': 'MCP-Test-Client/1.0'
                 }
             }
         });
         console.log('✅ HTTP POST result:', httpPostResult.data.success ? 'Success' : 'Failed');
         console.log('   Response status:', httpPostResult.data.result.result.status);
         console.log();
-
         // Test 4: Weather tool (mock data)
         console.log('4️⃣ Testing weather tool (mock data)...');
         const weatherResult = await axios.post(`${SERVER_URL}/mcp/call-tool`, {
@@ -59,21 +52,19 @@ async function testMCPSSEServer() {
         console.log('   Temperature:', weatherResult.data.result.result.temperature + '°C');
         console.log('   Mock data:', weatherResult.data.result.result.mock);
         console.log();
-
         // Test 5: Create post tool
         console.log('5️⃣ Testing create post tool...');
         const postResult = await axios.post(`${SERVER_URL}/mcp/call-tool`, {
             tool: 'create_post',
             parameters: {
-                title: 'Test Post from MCP SSE Server',
-                body: 'This post was created by the MCP SSE server test script!',
+                title: 'Test Post from MCP',
+                body: 'This post was created by the MCP server test script!',
                 userId: 42
             }
         });
         console.log('✅ Create post result:', postResult.data.success ? 'Success' : 'Failed');
         console.log('   Created post ID:', postResult.data.result.result.post.id);
         console.log();
-
         // Test 6: Error handling
         console.log('6️⃣ Testing error handling...');
         try {
@@ -81,14 +72,14 @@ async function testMCPSSEServer() {
                 tool: 'non_existent_tool',
                 parameters: {}
             });
-        } catch (error) {
+        }
+        catch (error) {
             console.log('✅ Error handling works:', error.response.status, error.response.data.error);
         }
         console.log();
-
-        console.log('🎉 All SSE server tests completed successfully!');
-
-    } catch (error) {
+        console.log('🎉 All tests completed successfully!');
+    }
+    catch (error) {
         console.error('❌ Test failed:', error.message);
         if (error.response) {
             console.error('   Status:', error.response.status);
@@ -97,20 +88,16 @@ async function testMCPSSEServer() {
         process.exit(1);
     }
 }
-
 // Test SSE connection
 async function testSSEConnection() {
     console.log('📡 Testing SSE connection...');
-    
     try {
         // Note: This is a simplified test - in a real scenario you'd use EventSource
         const response = await axios.get(`${SERVER_URL}/mcp/sse`, {
             responseType: 'stream',
             timeout: 5000
         });
-        
         console.log('✅ SSE endpoint is accessible');
-        
         // Read first few chunks
         let chunks = 0;
         response.data.on('data', (chunk) => {
@@ -119,35 +106,28 @@ async function testSSEConnection() {
                 chunks++;
             }
         });
-        
         // Close after a short delay
         setTimeout(() => {
             response.data.destroy();
             console.log('✅ SSE connection test completed\n');
         }, 2000);
-        
-    } catch (error) {
+    }
+    catch (error) {
         console.error('❌ SSE test failed:', error.message);
     }
 }
-
 // Main execution
 async function main() {
-    console.log('🚀 MCP SSE Server Test Suite');
-    console.log('=' .repeat(50));
-    console.log('Make sure the SSE server is running on port 3000');
-    console.log('Run: npm run start:sse\n');
-    
+    console.log('🚀 MCP Server Test Suite');
+    console.log('='.repeat(50));
     // Wait a moment for potential server startup
     await new Promise(resolve => setTimeout(resolve, 1000));
-    
     await testSSEConnection();
-    await testMCPSSEServer();
+    await testMCPServer();
 }
-
 // Handle script execution
 if (import.meta.url === `file://${process.argv[1]}`) {
     main().catch(console.error);
 }
-
-export { testMCPSSEServer, testSSEConnection }; 
+export { testMCPServer, testSSEConnection };
+//# sourceMappingURL=test-tools.js.map

@@ -1,8 +1,21 @@
-import axios from 'axios';
+import axios, { AxiosInstance, AxiosResponse } from 'axios';
 import https from 'https';
+import type {
+  MCPCapabilities,
+  MCPTool,
+  MCPToolDefinition,
+  MCPToolResult,
+  HttpPostParameters,
+  HttpPostResult,
+  WeatherParameters,
+  WeatherResult,
+  CreatePostParameters,
+  CreatePostResult,
+  MCPToolHandler
+} from './types/mcp.js';
 
 // Configure axios to ignore SSL certificate errors for testing
-const axiosInstance = axios.create({
+const axiosInstance: AxiosInstance = axios.create({
   httpsAgent: new https.Agent({
     rejectUnauthorized: false
   }),
@@ -13,6 +26,8 @@ const axiosInstance = axios.create({
  * MCP Server implementation with tool support
  */
 export class MCPServer {
+  private tools: Map<string, MCPToolDefinition>;
+
   constructor() {
     this.tools = new Map();
     this.initializeTools();
@@ -21,7 +36,7 @@ export class MCPServer {
   /**
    * Initialize available tools
    */
-  initializeTools() {
+  private initializeTools(): void {
     // HTTP POST tool
     this.tools.set('http_post', {
       name: 'http_post',
@@ -111,8 +126,8 @@ export class MCPServer {
   /**
    * Generic HTTP POST handler
    */
-  async httpPostHandler(parameters) {
-    const { url, data, headers = {}, timeout = 5000 } = parameters;
+  private async httpPostHandler(parameters: Record<string, any>): Promise<HttpPostResult> {
+    const { url, data, headers = {}, timeout = 5000 } = parameters as HttpPostParameters;
 
     try {
       const config = {
@@ -123,7 +138,7 @@ export class MCPServer {
         }
       };
 
-      const response = await axiosInstance.post(url, data, config);
+      const response: AxiosResponse = await axiosInstance.post(url, data, config);
 
       return {
         success: true,
@@ -133,12 +148,12 @@ export class MCPServer {
         data: response.data,
         timestamp: new Date().toISOString()
       };
-    } catch (error) {
+    } catch (error: any) {
       return {
         success: false,
         error: error.message,
-        status: error.response?.status || null,
-        statusText: error.response?.statusText || null,
+        status: error.response?.status || undefined,
+        statusText: error.response?.statusText || undefined,
         timestamp: new Date().toISOString()
       };
     }
@@ -147,8 +162,8 @@ export class MCPServer {
   /**
    * Weather API handler (using OpenWeatherMap)
    */
-  async getWeatherHandler(parameters) {
-    const { city, apiKey, units = 'metric' } = parameters;
+  private async getWeatherHandler(parameters: Record<string, any>): Promise<WeatherResult> {
+    const { city, apiKey, units = 'metric' } = parameters as WeatherParameters;
 
     // If no API key provided, return mock data
     if (!apiKey) {
@@ -167,7 +182,7 @@ export class MCPServer {
     try {
       const url = `https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(city)}&appid=${apiKey}&units=${units}`;
       
-      const response = await axiosInstance.get(url);
+      const response: AxiosResponse = await axiosInstance.get(url);
 
       return {
         success: true,
@@ -181,11 +196,15 @@ export class MCPServer {
         units: units,
         timestamp: new Date().toISOString()
       };
-    } catch (error) {
+    } catch (error: any) {
       return {
         success: false,
         error: error.message,
         city: city,
+        temperature: 0,
+        description: '',
+        humidity: 0,
+        units: units,
         timestamp: new Date().toISOString()
       };
     }
@@ -194,11 +213,11 @@ export class MCPServer {
   /**
    * JSONPlaceholder create post handler
    */
-  async createPostHandler(parameters) {
-    const { title, body, userId = 1 } = parameters;
+  private async createPostHandler(parameters: Record<string, any>): Promise<CreatePostResult> {
+    const { title, body, userId = 1 } = parameters as CreatePostParameters;
 
     try {
-      const response = await axiosInstance.post('https://jsonplaceholder.typicode.com/posts', {
+      const response: AxiosResponse = await axiosInstance.post('https://jsonplaceholder.typicode.com/posts', {
         title,
         body,
         userId
@@ -214,7 +233,7 @@ export class MCPServer {
         message: 'Post created successfully',
         timestamp: new Date().toISOString()
       };
-    } catch (error) {
+    } catch (error: any) {
       return {
         success: false,
         error: error.message,
@@ -226,7 +245,7 @@ export class MCPServer {
   /**
    * Get server capabilities
    */
-  getCapabilities() {
+  public getCapabilities(): MCPCapabilities {
     return {
       tools: {
         supported: true,
@@ -247,7 +266,7 @@ export class MCPServer {
   /**
    * Get all available tools
    */
-  getTools() {
+  public getTools(): MCPTool[] {
     return Array.from(this.tools.values()).map(tool => ({
       name: tool.name,
       description: tool.description,
@@ -258,7 +277,7 @@ export class MCPServer {
   /**
    * Call a specific tool
    */
-  async callTool(toolName, parameters) {
+  public async callTool(toolName: string, parameters: Record<string, any>): Promise<MCPToolResult> {
     const tool = this.tools.get(toolName);
     
     if (!tool) {
@@ -281,7 +300,7 @@ export class MCPServer {
         result: result,
         executedAt: new Date().toISOString()
       };
-    } catch (error) {
+    } catch (error: any) {
       throw new Error(`Tool execution failed: ${error.message}`);
     }
   }

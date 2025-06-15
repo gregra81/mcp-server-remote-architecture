@@ -1,9 +1,10 @@
-import express from 'express';
+import express, { Express, Request, Response } from 'express';
 import cors from 'cors';
 import { MCPServer } from './mcp-server.js';
+import type { MCPToolCall, MCPToolResponse, MCPEvent } from './types/mcp.js';
 
-const app = express();
-const port = process.env.PORT || 3001;
+const app: Express = express();
+const port: number = Number(process.env.PORT) || 3001;
 
 // Middleware
 app.use(cors());
@@ -13,7 +14,7 @@ app.use(express.json());
 const mcpServer = new MCPServer();
 
 // Streamable HTTP endpoint for MCP communication (chunked transfer encoding)
-app.get('/mcp/stream', (req, res) => {
+app.get('/mcp/stream', (req: Request, res: Response): void => {
   // Set up streaming headers
   res.writeHead(200, {
     'Content-Type': 'application/json',
@@ -25,7 +26,7 @@ app.get('/mcp/stream', (req, res) => {
   });
 
   // Handle client connection
-  const clientId = Date.now().toString();
+  const clientId: string = Date.now().toString();
   console.log(`Client ${clientId} connected to MCP Stream`);
 
   // Send initial connection message as chunked JSON
@@ -63,7 +64,7 @@ app.get('/mcp/stream', (req, res) => {
 });
 
 // Alternative streaming endpoint with simpler chunk format
-app.get('/mcp/stream-simple', (req, res) => {
+app.get('/mcp/stream-simple', (req: Request, res: Response): void => {
   // Set up streaming headers with simple chunking
   res.writeHead(200, {
     'Content-Type': 'application/x-ndjson', // Newline Delimited JSON
@@ -75,11 +76,11 @@ app.get('/mcp/stream-simple', (req, res) => {
   });
 
   // Handle client connection
-  const clientId = Date.now().toString();
+  const clientId: string = Date.now().toString();
   console.log(`Client ${clientId} connected to MCP Simple Stream`);
 
   // Send initial connection message
-  const initialData = {
+  const initialData: MCPEvent = {
     type: 'connection',
     clientId: clientId,
     message: 'Connected to MCP Streamable Server (Simple Format)'
@@ -87,7 +88,7 @@ app.get('/mcp/stream-simple', (req, res) => {
   res.write(JSON.stringify(initialData) + '\n');
 
   // Send server capabilities
-  const capabilitiesData = {
+  const capabilitiesData: MCPEvent = {
     type: 'capabilities',
     capabilities: mcpServer.getCapabilities()
   };
@@ -100,7 +101,7 @@ app.get('/mcp/stream-simple', (req, res) => {
 
   // Keep connection alive
   const keepAlive = setInterval(() => {
-    const pingData = {
+    const pingData: MCPEvent = {
       type: 'ping',
       timestamp: new Date().toISOString()
     };
@@ -113,14 +114,15 @@ app.get('/mcp/stream-simple', (req, res) => {
 });
 
 // HTTP endpoint for MCP tool calls with streaming response
-app.post('/mcp/call-tool-stream', async (req, res) => {
+app.post('/mcp/call-tool-stream', async (req: Request, res: Response): Promise<void> => {
   try {
-    const { tool, parameters } = req.body;
+    const { tool, parameters }: MCPToolCall = req.body;
     
     if (!tool || !parameters) {
-      return res.status(400).json({
+      res.status(400).json({
         error: 'Missing tool or parameters'
       });
+      return;
     }
 
     console.log(`Executing tool: ${tool} with parameters:`, parameters);
@@ -133,76 +135,85 @@ app.post('/mcp/call-tool-stream', async (req, res) => {
     });
 
     // Send initial status
-    res.write(JSON.stringify({
+    const statusEvent: MCPEvent = {
       type: 'status',
       message: `Starting execution of tool: ${tool}`,
       timestamp: new Date().toISOString()
-    }) + '\n');
+    };
+    res.write(JSON.stringify(statusEvent) + '\n');
 
     // Execute tool and stream result
     const result = await mcpServer.callTool(tool, parameters);
     
     // Send final result
-    res.write(JSON.stringify({
+    const resultEvent: MCPEvent = {
       type: 'result',
       success: true,
       result: result,
       timestamp: new Date().toISOString()
-    }) + '\n');
+    };
+    res.write(JSON.stringify(resultEvent) + '\n');
 
     res.end();
-  } catch (error) {
+  } catch (error: any) {
     console.error('Tool execution error:', error);
     
     // Send error in streaming format
-    res.write(JSON.stringify({
+    const errorEvent: MCPEvent = {
       type: 'error',
       success: false,
       error: error.message,
       timestamp: new Date().toISOString()
-    }) + '\n');
+    };
+    res.write(JSON.stringify(errorEvent) + '\n');
     
     res.end();
   }
 });
 
 // Standard HTTP endpoint for MCP tool calls (same as original)
-app.post('/mcp/call-tool', async (req, res) => {
+app.post('/mcp/call-tool', async (req: Request, res: Response): Promise<void> => {
   try {
-    const { tool, parameters } = req.body;
+    const { tool, parameters }: MCPToolCall = req.body;
     
     if (!tool || !parameters) {
-      return res.status(400).json({
+      res.status(400).json({
         error: 'Missing tool or parameters'
       });
+      return;
     }
 
     console.log(`Executing tool: ${tool} with parameters:`, parameters);
     
     const result = await mcpServer.callTool(tool, parameters);
     
-    res.json({
+    const response: MCPToolResponse = {
       success: true,
       result: result
-    });
-  } catch (error) {
+    };
+
+    res.json(response);
+  } catch (error: any) {
     console.error('Tool execution error:', error);
-    res.status(500).json({
+    
+    const errorResponse: MCPToolResponse = {
       success: false,
       error: error.message
-    });
+    };
+
+    res.status(500).json(errorResponse);
   }
 });
 
 // Get available tools
-app.get('/mcp/tools', (req, res) => {
+app.get('/mcp/tools', (req: Request, res: Response): void => {
   res.json({
     tools: mcpServer.getTools()
   });
 });
 
 // Health check endpoint
-app.get('/health', (req, res) => {
+app.get('/health', (req: Request, res: Response): void => {
   res.json({
     status: 'healthy',
     timestamp: new Date().toISOString(),
@@ -211,7 +222,7 @@ app.get('/health', (req, res) => {
 });
 
 // Start server
-app.listen(port, () => {
+app.listen(port, (): void => {
   console.log(`🚀 MCP Streamable HTTP Server running on port ${port}`);
   console.log(`🌊 Streaming endpoint: http://localhost:${port}/mcp/stream`);
   console.log(`📡 Simple streaming endpoint: http://localhost:${port}/mcp/stream-simple`);
