@@ -15,14 +15,14 @@ A collection of **Model Context Protocol (MCP)** server implementations demonstr
 
 ## 📊 Server Comparison
 
-| Feature | SSE Server (Port 3000) | Streamable HTTP Server (Port 3001) |
-|---------|------------------------|-------------------------------------|
-| **Protocol** | Server-Sent Events | HTTP Chunked Transfer Encoding |
-| **Content-Type** | `text/event-stream` | `application/x-ndjson` |
-| **Streaming Format** | SSE event format | Newline Delimited JSON |
-| **Tools** | Same tools | Same tools |
-| **Performance** | Optimized for browsers | More flexible for various clients |
-| **Browser Support** | Built-in EventSource | Manual streaming handling |
+| Feature              | SSE Server (Port 3000) | Streamable HTTP Server (Port 3001) |
+| -------------------- | ---------------------- | ---------------------------------- |
+| **Protocol**         | Server-Sent Events     | HTTP Chunked Transfer Encoding     |
+| **Content-Type**     | `text/event-stream`    | `application/x-ndjson`             |
+| **Streaming Format** | SSE event format       | Newline Delimited JSON             |
+| **Tools**            | Same tools             | Same tools                         |
+| **Performance**      | Optimized for browsers | More flexible for various clients  |
+| **Browser Support**  | Built-in EventSource   | Manual streaming handling          |
 
 ## 🏗️ Architecture
 
@@ -44,19 +44,22 @@ mcp-hello-world/
 ## 🛠️ Installation
 
 1. **Clone or create the project**:
+
    ```bash
    mkdir mcp-hello-world
    cd mcp-hello-world
    ```
 
 2. **Install dependencies**:
+
    ```bash
    npm install
    ```
 
 3. **Start the servers**:
-   
+
    **SSE Server (port 3000)**:
+
    ```bash
    npm start
    # or explicitly
@@ -66,8 +69,9 @@ mcp-hello-world/
    # or explicitly
    npm run dev:sse
    ```
-   
+
    **Streamable HTTP Server (port 3001)**:
+
    ```bash
    npm run start:streamable
    # or for development with auto-reload
@@ -79,12 +83,14 @@ Both servers can run simultaneously on different ports.
 ## 📡 API Endpoints
 
 ### SSE Server (Port 3000)
+
 - **GET** `/mcp/sse` - Server-Sent Events stream for real-time communication
 - **GET** `/health` - Health check endpoint
 - **GET** `/mcp/tools` - List available tools
 - **POST** `/mcp/call-tool` - Execute a tool
 
 ### Streamable HTTP Server (Port 3001)
+
 - **GET** `/mcp/stream` - HTTP chunked streaming (raw format)
 - **GET** `/mcp/stream-simple` - HTTP chunked streaming (NDJSON format)
 - **POST** `/mcp/call-tool-stream` - Execute a tool with streaming response
@@ -95,36 +101,42 @@ Both servers can run simultaneously on different ports.
 ## 🔧 Available Tools
 
 ### 1. `http_post` - Generic HTTP POST Tool
+
 Makes HTTP POST requests to external APIs.
 
 **Parameters**:
+
 - `url` (string, required): Target URL
 - `data` (object, required): JSON data to send
 - `headers` (object, optional): Additional headers
 - `timeout` (number, optional): Request timeout in ms
 
 **Example**:
+
 ```json
 {
   "tool": "http_post",
   "parameters": {
     "url": "https://httpbin.org/post",
-    "data": {"message": "Hello World!"},
-    "headers": {"User-Agent": "MCP-Client"},
+    "data": { "message": "Hello World!" },
+    "headers": { "User-Agent": "MCP-Client" },
     "timeout": 5000
   }
 }
 ```
 
 ### 2. `get_weather` - Weather Information Tool
+
 Gets weather data using OpenWeatherMap API (or returns mock data).
 
 **Parameters**:
+
 - `city` (string, required): City name
 - `apiKey` (string, optional): OpenWeatherMap API key
 - `units` (string, optional): Temperature units (metric/imperial/kelvin)
 
 **Example**:
+
 ```json
 {
   "tool": "get_weather",
@@ -136,14 +148,17 @@ Gets weather data using OpenWeatherMap API (or returns mock data).
 ```
 
 ### 3. `create_post` - Post Creation Tool
+
 Creates posts using JSONPlaceholder API.
 
 **Parameters**:
+
 - `title` (string, required): Post title
 - `body` (string, required): Post content
 - `userId` (number, optional): User ID
 
 **Example**:
+
 ```json
 {
   "tool": "create_post",
@@ -170,6 +185,7 @@ Creates posts using JSONPlaceholder API.
 ### Automated Testing
 
 **SSE Server Testing**:
+
 ```bash
 npm test
 # or explicitly
@@ -179,6 +195,7 @@ node examples/test-sse.js
 ```
 
 **Streamable HTTP Server Testing**:
+
 ```bash
 npm run test:streamable
 # or directly
@@ -186,6 +203,7 @@ node examples/test-streamable.js
 ```
 
 **Legacy Testing** (for backward compatibility):
+
 ```bash
 node examples/test-tools.js
 ```
@@ -193,16 +211,19 @@ node examples/test-tools.js
 ### Manual Testing with curl
 
 **Health Check**:
+
 ```bash
 curl http://localhost:3000/health
 ```
 
 **List Tools**:
+
 ```bash
 curl http://localhost:3000/mcp/tools
 ```
 
 **Call HTTP POST Tool**:
+
 ```bash
 curl -X POST http://localhost:3000/mcp/call-tool \
   -H "Content-Type: application/json" \
@@ -217,6 +238,7 @@ curl -X POST http://localhost:3000/mcp/call-tool \
 ```
 
 **Test SSE Connection**:
+
 ```bash
 curl -N http://localhost:3000/mcp/sse
 ```
@@ -224,16 +246,19 @@ curl -N http://localhost:3000/mcp/sse
 ### Streamable HTTP Server Testing
 
 **Health Check**:
+
 ```bash
 curl http://localhost:3001/health
 ```
 
 **List Tools**:
+
 ```bash
 curl http://localhost:3001/mcp/tools
 ```
 
 **Test Streaming Tool Call**:
+
 ```bash
 curl -X POST http://localhost:3001/mcp/call-tool-stream \
   -H "Content-Type: application/json" \
@@ -246,6 +271,7 @@ curl -X POST http://localhost:3001/mcp/call-tool-stream \
 ```
 
 **Test Simple Stream Connection**:
+
 ```bash
 curl -N http://localhost:3001/mcp/stream-simple
 ```
@@ -255,20 +281,23 @@ curl -N http://localhost:3001/mcp/stream-simple
 This server implements key MCP protocol features:
 
 ### Server-Sent Events (SSE)
+
 - Real-time bidirectional communication
 - Connection management with keep-alive
 - Event streaming for tool responses
 
 ### Tool System
+
 - Dynamic tool registration
 - JSON Schema validation
 - Error handling and reporting
 - Extensible architecture
 
 ### Capabilities
+
 - Tools: ✅ Supported
 - Resources: ❌ Not implemented
-- Prompts: ❌ Not implemented  
+- Prompts: ❌ Not implemented
 - Logging: ✅ Supported
 
 ## 🚀 Extending the Server
@@ -276,14 +305,15 @@ This server implements key MCP protocol features:
 ### Adding New Tools
 
 1. **Create tool handler** in `src/mcp-server.js`:
+
 ```javascript
 async myCustomToolHandler(parameters) {
   const { param1, param2 } = parameters;
-  
+
   try {
     // Your tool logic here
     const result = await someApiCall(param1, param2);
-    
+
     return {
       success: true,
       data: result,
@@ -300,6 +330,7 @@ async myCustomToolHandler(parameters) {
 ```
 
 2. **Register the tool** in `initializeTools()`:
+
 ```javascript
 this.tools.set('my_custom_tool', {
   name: 'my_custom_tool',
@@ -309,29 +340,33 @@ this.tools.set('my_custom_tool', {
     properties: {
       param1: {
         type: 'string',
-        description: 'Description of param1'
+        description: 'Description of param1',
       },
       param2: {
         type: 'number',
-        description: 'Description of param2'
-      }
+        description: 'Description of param2',
+      },
     },
-    required: ['param1']
+    required: ['param1'],
   },
-  handler: this.myCustomToolHandler.bind(this)
+  handler: this.myCustomToolHandler.bind(this),
 });
 ```
 
 ## 🐛 Debugging
 
 ### Server Logs
+
 The server provides detailed logging:
+
 - Client connections/disconnections
 - Tool executions
 - Error messages
 
 ### Client Debugging
+
 The web client includes:
+
 - Real-time connection status
 - Server message log
 - Request/response inspection
@@ -346,6 +381,7 @@ The web client includes:
 ## 🔄 Streaming Approaches Explained
 
 ### Server-Sent Events (SSE)
+
 - **Format**: Text-based event stream with `data:` prefixes
 - **Browser Support**: Native `EventSource` API
 - **Use Case**: Best for browser-based real-time applications
@@ -353,6 +389,7 @@ The web client includes:
 - **Example**: `data: {"type": "message", "content": "hello"}\n\n`
 
 ### HTTP Chunked Transfer Encoding
+
 - **Format**: Newline Delimited JSON (NDJSON)
 - **Client Support**: Manual stream processing required
 - **Use Case**: More flexible for various client types (servers, CLI tools)
@@ -362,11 +399,13 @@ The web client includes:
 ### When to Use Which?
 
 **Choose SSE** when:
+
 - Building browser-based applications
 - Need automatic reconnection
 - Want built-in browser support
 
 **Choose Streamable HTTP** when:
+
 - Building server-to-server communication
 - Need custom streaming logic
 - Working with non-browser clients
@@ -392,4 +431,4 @@ MIT License - see LICENSE file for details.
 
 ---
 
-**Happy coding with MCP! 🚀** 
+**Happy coding with MCP! 🚀**

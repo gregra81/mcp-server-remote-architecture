@@ -11,15 +11,15 @@ import type {
   WeatherResult,
   CreatePostParameters,
   CreatePostResult,
-  MCPToolHandler
+  MCPToolHandler,
 } from './types/mcp.js';
 
 // Configure axios to ignore SSL certificate errors for testing
 const axiosInstance: AxiosInstance = axios.create({
   httpsAgent: new https.Agent({
-    rejectUnauthorized: false
+    rejectUnauthorized: false,
   }),
-  timeout: 10000
+  timeout: 10000,
 });
 
 /**
@@ -46,52 +46,54 @@ export class MCPServer {
         properties: {
           url: {
             type: 'string',
-            description: 'The URL to send the POST request to'
+            description: 'The URL to send the POST request to',
           },
           data: {
             type: 'object',
-            description: 'The JSON data to send in the request body'
+            description: 'The JSON data to send in the request body',
           },
           headers: {
             type: 'object',
             description: 'Additional headers to include in the request',
-            default: {}
+            default: {},
           },
           timeout: {
             type: 'number',
             description: 'Request timeout in milliseconds',
-            default: 5000
-          }
+            default: 5000,
+          },
         },
-        required: ['url', 'data']
+        required: ['url', 'data'],
       },
-      handler: this.httpPostHandler.bind(this)
+      handler: this.httpPostHandler.bind(this),
     });
 
     // Weather API tool (example using a real API)
     this.tools.set('get_weather', {
       name: 'get_weather',
-      description: 'Get weather information for a specific city using OpenWeatherMap API',
+      description:
+        'Get weather information for a specific city using OpenWeatherMap API',
       inputSchema: {
         type: 'object',
         properties: {
           city: {
             type: 'string',
-            description: 'The city name to get weather for'
+            description: 'The city name to get weather for',
           },
           apiKey: {
             type: 'string',
-            description: 'OpenWeatherMap API key (optional, uses demo data if not provided)'
+            description:
+              'OpenWeatherMap API key (optional, uses demo data if not provided)',
           },
           units: {
             type: 'string',
             description: 'Temperature units (metric, imperial, kelvin)',
-            default: 'metric'
-          }
+            default: 'metric',
+          },
         },
-        required: ['city']
+        required: ['city'],
       },
-      handler: this.getWeatherHandler.bind(this)
+      handler: this.getWeatherHandler.bind(this),
     });
 
     // JSON placeholder POST tool (example with real endpoint)
@@ -103,21 +105,21 @@ export class MCPServer {
         properties: {
           title: {
             type: 'string',
-            description: 'The title of the post'
+            description: 'The title of the post',
           },
           body: {
             type: 'string',
-            description: 'The body content of the post'
+            description: 'The body content of the post',
           },
           userId: {
             type: 'number',
             description: 'The user ID creating the post',
-            default: 1
-          }
+            default: 1,
+          },
         },
-        required: ['title', 'body']
+        required: ['title', 'body'],
       },
-      handler: this.createPostHandler.bind(this)
+      handler: this.createPostHandler.bind(this),
     });
 
     console.log(`Initialized ${this.tools.size} tools`);
@@ -126,19 +128,30 @@ export class MCPServer {
   /**
    * Generic HTTP POST handler
    */
-  private async httpPostHandler(parameters: Record<string, any>): Promise<HttpPostResult> {
-    const { url, data, headers = {}, timeout = 5000 } = parameters as HttpPostParameters;
+  private async httpPostHandler(
+    parameters: Record<string, any>
+  ): Promise<HttpPostResult> {
+    const {
+      url,
+      data,
+      headers = {},
+      timeout = 5000,
+    } = parameters as HttpPostParameters;
 
     try {
       const config = {
         timeout,
         headers: {
           'Content-Type': 'application/json',
-          ...headers
-        }
+          ...headers,
+        },
       };
 
-      const response: AxiosResponse = await axiosInstance.post(url, data, config);
+      const response: AxiosResponse = await axiosInstance.post(
+        url,
+        data,
+        config
+      );
 
       return {
         success: true,
@@ -146,7 +159,7 @@ export class MCPServer {
         statusText: response.statusText,
         headers: response.headers,
         data: response.data,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       };
     } catch (error: any) {
       return {
@@ -154,7 +167,7 @@ export class MCPServer {
         error: error.message,
         status: error.response?.status || undefined,
         statusText: error.response?.statusText || undefined,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       };
     }
   }
@@ -162,7 +175,9 @@ export class MCPServer {
   /**
    * Weather API handler (using OpenWeatherMap)
    */
-  private async getWeatherHandler(parameters: Record<string, any>): Promise<WeatherResult> {
+  private async getWeatherHandler(
+    parameters: Record<string, any>
+  ): Promise<WeatherResult> {
     const { city, apiKey, units = 'metric' } = parameters as WeatherParameters;
 
     // If no API key provided, return mock data
@@ -175,13 +190,13 @@ export class MCPServer {
         description: 'Mock weather data - partly cloudy',
         humidity: Math.floor(Math.random() * 50) + 30,
         units: units,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       };
     }
 
     try {
       const url = `https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(city)}&appid=${apiKey}&units=${units}`;
-      
+
       const response: AxiosResponse = await axiosInstance.get(url);
 
       return {
@@ -194,7 +209,7 @@ export class MCPServer {
         pressure: response.data.main.pressure,
         windSpeed: response.data.wind?.speed || 0,
         units: units,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       };
     } catch (error: any) {
       return {
@@ -205,7 +220,7 @@ export class MCPServer {
         description: '',
         humidity: 0,
         units: units,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       };
     }
   }
@@ -213,31 +228,37 @@ export class MCPServer {
   /**
    * JSONPlaceholder create post handler
    */
-  private async createPostHandler(parameters: Record<string, any>): Promise<CreatePostResult> {
+  private async createPostHandler(
+    parameters: Record<string, any>
+  ): Promise<CreatePostResult> {
     const { title, body, userId = 1 } = parameters as CreatePostParameters;
 
     try {
-      const response: AxiosResponse = await axiosInstance.post('https://jsonplaceholder.typicode.com/posts', {
-        title,
-        body,
-        userId
-      }, {
-        headers: {
-          'Content-Type': 'application/json'
+      const response: AxiosResponse = await axiosInstance.post(
+        'https://jsonplaceholder.typicode.com/posts',
+        {
+          title,
+          body,
+          userId,
+        },
+        {
+          headers: {
+            'Content-Type': 'application/json',
+          },
         }
-      });
+      );
 
       return {
         success: true,
         post: response.data,
         message: 'Post created successfully',
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       };
     } catch (error: any) {
       return {
         success: false,
         error: error.message,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       };
     }
   }
@@ -249,17 +270,17 @@ export class MCPServer {
     return {
       tools: {
         supported: true,
-        listChanged: false
+        listChanged: false,
       },
       resources: {
-        supported: false
+        supported: false,
       },
       prompts: {
-        supported: false
+        supported: false,
       },
       logging: {
-        supported: true
-      }
+        supported: true,
+      },
     };
   }
 
@@ -270,16 +291,19 @@ export class MCPServer {
     return Array.from(this.tools.values()).map(tool => ({
       name: tool.name,
       description: tool.description,
-      inputSchema: tool.inputSchema
+      inputSchema: tool.inputSchema,
     }));
   }
 
   /**
    * Call a specific tool
    */
-  public async callTool(toolName: string, parameters: Record<string, any>): Promise<MCPToolResult> {
+  public async callTool(
+    toolName: string,
+    parameters: Record<string, any>
+  ): Promise<MCPToolResult> {
     const tool = this.tools.get(toolName);
-    
+
     if (!tool) {
       throw new Error(`Tool '${toolName}' not found`);
     }
@@ -298,10 +322,10 @@ export class MCPServer {
       return {
         tool: toolName,
         result: result,
-        executedAt: new Date().toISOString()
+        executedAt: new Date().toISOString(),
       };
     } catch (error: any) {
       throw new Error(`Tool execution failed: ${error.message}`);
     }
   }
-} 
+}

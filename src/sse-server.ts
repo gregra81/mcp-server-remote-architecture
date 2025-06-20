@@ -19,9 +19,9 @@ app.get('/mcp/sse', (req: Request, res: Response): void => {
   res.writeHead(200, {
     'Content-Type': 'text/event-stream',
     'Cache-Control': 'no-cache',
-    'Connection': 'keep-alive',
+    Connection: 'keep-alive',
     'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'Cache-Control'
+    'Access-Control-Allow-Headers': 'Cache-Control',
   });
 
   // Handle client connection
@@ -29,17 +29,21 @@ app.get('/mcp/sse', (req: Request, res: Response): void => {
   console.log(`Client ${clientId} connected to MCP SSE`);
 
   // Send initial connection message
-  res.write(`data: ${JSON.stringify({
-    type: 'connection',
-    clientId: clientId,
-    message: 'Connected to MCP Server'
-  })}\n\n`);
+  res.write(
+    `data: ${JSON.stringify({
+      type: 'connection',
+      clientId: clientId,
+      message: 'Connected to MCP Server',
+    })}\n\n`
+  );
 
   // Send server capabilities
-  res.write(`data: ${JSON.stringify({
-    type: 'capabilities',
-    capabilities: mcpServer.getCapabilities()
-  })}\n\n`);
+  res.write(
+    `data: ${JSON.stringify({
+      type: 'capabilities',
+      capabilities: mcpServer.getCapabilities(),
+    })}\n\n`
+  );
 
   // Handle client disconnect
   req.on('close', () => {
@@ -48,10 +52,12 @@ app.get('/mcp/sse', (req: Request, res: Response): void => {
 
   // Keep connection alive
   const keepAlive = setInterval(() => {
-    res.write(`data: ${JSON.stringify({
-      type: 'ping',
-      timestamp: new Date().toISOString()
-    })}\n\n`);
+    res.write(
+      `data: ${JSON.stringify({
+        type: 'ping',
+        timestamp: new Date().toISOString(),
+      })}\n\n`
+    );
   }, 30000);
 
   req.on('close', () => {
@@ -60,43 +66,46 @@ app.get('/mcp/sse', (req: Request, res: Response): void => {
 });
 
 // HTTP endpoint for MCP tool calls
-app.post('/mcp/call-tool', async (req: Request, res: Response): Promise<void> => {
-  try {
-    const { tool, parameters }: MCPToolCall = req.body;
-    
-    if (!tool || !parameters) {
-      res.status(400).json({
-        error: 'Missing tool or parameters'
-      });
-      return;
+app.post(
+  '/mcp/call-tool',
+  async (req: Request, res: Response): Promise<void> => {
+    try {
+      const { tool, parameters }: MCPToolCall = req.body;
+
+      if (!tool || !parameters) {
+        res.status(400).json({
+          error: 'Missing tool or parameters',
+        });
+        return;
+      }
+
+      console.log(`Executing tool: ${tool} with parameters:`, parameters);
+
+      const result = await mcpServer.callTool(tool, parameters);
+
+      const response: MCPToolResponse = {
+        success: true,
+        result: result,
+      };
+
+      res.json(response);
+    } catch (error: any) {
+      console.error('Tool execution error:', error);
+
+      const errorResponse: MCPToolResponse = {
+        success: false,
+        error: error.message,
+      };
+
+      res.status(500).json(errorResponse);
     }
-
-    console.log(`Executing tool: ${tool} with parameters:`, parameters);
-    
-    const result = await mcpServer.callTool(tool, parameters);
-    
-    const response: MCPToolResponse = {
-      success: true,
-      result: result
-    };
-
-    res.json(response);
-  } catch (error: any) {
-    console.error('Tool execution error:', error);
-    
-    const errorResponse: MCPToolResponse = {
-      success: false,
-      error: error.message
-    };
-
-    res.status(500).json(errorResponse);
   }
-});
+);
 
 // Get available tools
 app.get('/mcp/tools', (req: Request, res: Response): void => {
   res.json({
-    tools: mcpServer.getTools()
+    tools: mcpServer.getTools(),
   });
 });
 
@@ -105,7 +114,7 @@ app.get('/health', (req: Request, res: Response): void => {
   res.json({
     status: 'healthy',
     timestamp: new Date().toISOString(),
-    server: 'MCP SSE Server'
+    server: 'MCP SSE Server',
   });
 });
 
@@ -115,4 +124,4 @@ app.listen(port, (): void => {
   console.log(`📡 SSE endpoint: http://localhost:${port}/mcp/sse`);
   console.log(`🔧 Tool call endpoint: http://localhost:${port}/mcp/call-tool`);
   console.log(`📋 Available tools: http://localhost:${port}/mcp/tools`);
-}); 
+});
