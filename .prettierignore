@@ -1,0 +1,19 @@
+# Build outputs
+dist/
+build/
+*.min.js
+*.min.css
+
+# Node modules
+node_modules/
+
+# Logs
+*.log
+
+# Package manager files
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Generated files
+*.d.ts.map 
