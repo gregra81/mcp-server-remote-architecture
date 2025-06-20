@@ -3,6 +3,8 @@
     "target": "ES2020",
     "module": "ESNext",
     "moduleResolution": "node",
+    "allowImportingTsExtensions": false,
+    "noResolve": false,
     "lib": ["ES2020", "DOM"],
     "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,

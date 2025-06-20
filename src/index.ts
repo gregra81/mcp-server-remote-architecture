@@ -6,7 +6,7 @@ import {
   ListToolsRequestSchema,
 } from '@modelcontextprotocol/sdk/types.js';
 
-import { MCPToolsManager } from './mcp-tools-manager';
+import { MCPToolsManager } from './mcp-tools-manager.js';
 
 // 1. Create an MCP tools manager instance
 const toolsManager = new MCPToolsManager();

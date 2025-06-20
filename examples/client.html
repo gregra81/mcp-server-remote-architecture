@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>MCP Multi-Server Client</title>
+    <title>MCP Tools Browser Client</title>
     <style>
       body {
         font-family: Arial, sans-serif;
@@ -34,26 +34,6 @@
         color: #721c24;
         border: 1px solid #f5c6cb;
       }
-      .server-selector {
-        display: flex;
-        gap: 10px;
-        align-items: center;
-        margin-bottom: 15px;
-        padding: 15px;
-        background-color: #f8f9fa;
-        border-radius: 6px;
-        border: 1px solid #dee2e6;
-      }
-      .server-option {
-        display: flex;
-        align-items: center;
-        gap: 5px;
-      }
-      .server-info {
-        font-size: 12px;
-        color: #6c757d;
-        margin-left: 25px;
-      }
       .log {
         background-color: #f8f9fa;
         border: 1px solid #dee2e6;
@@ -81,17 +61,17 @@
         background-color: #6c757d;
         cursor: not-allowed;
       }
-      button.sse {
+      button.test {
         background-color: #28a745;
       }
-      button.sse:hover {
+      button.test:hover {
         background-color: #218838;
       }
-      button.streamable {
-        background-color: #fd7e14;
+      button.greg {
+        background-color: #6f42c1;
       }
-      button.streamable:hover {
-        background-color: #e8650e;
+      button.greg:hover {
+        background-color: #5a32a3;
       }
       input,
       textarea,
@@ -120,253 +100,174 @@
         margin-top: 10px;
         font-family: monospace;
         white-space: pre-wrap;
+        max-height: 300px;
+        overflow-y: auto;
       }
-      .badge {
-        display: inline-block;
-        padding: 4px 8px;
-        font-size: 12px;
-        font-weight: bold;
-        border-radius: 4px;
-        margin-left: 10px;
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 20px;
       }
-      .badge.sse {
-        background-color: #28a745;
-        color: white;
+      .tool-container {
+        border: 2px solid #007bff;
+        border-radius: 8px;
+        padding: 15px;
       }
-      .badge.streamable {
-        background-color: #fd7e14;
-        color: white;
+      .tool-container.greg-test {
+        border-color: #6f42c1;
+      }
+      .tool-container.weather {
+        border-color: #17a2b8;
+      }
+      .tool-container.http {
+        border-color: #fd7e14;
+      }
+      .tool-container.post {
+        border-color: #28a745;
       }
     </style>
   </head>
   <body>
-    <h1>🚀 MCP Multi-Server Client</h1>
+    <h1>🚀 MCP Tools Browser Client</h1>
 
     <div class="container">
-      <h2>🔄 Server Selection</h2>
-      <div class="server-selector">
-        <div class="server-option">
-          <input
-            type="radio"
-            id="sseServer"
-            name="serverType"
-            value="sse"
-            checked
-          />
-          <label for="sseServer">SSE Server (Port 3000)</label>
-        </div>
-        <div class="server-option">
-          <input
-            type="radio"
-            id="streamableServer"
-            name="serverType"
-            value="streamable"
-          />
-          <label for="streamableServer">Streamable Server (Port 3001)</label>
-        </div>
-      </div>
-      <div class="server-info">
-        <div id="sseInfo" class="server-description">
-          📡 Server-Sent Events with real-time communication
-        </div>
-        <div
-          id="streamableInfo"
-          class="server-description"
-          style="display: none"
-        >
-          🌊 HTTP Chunked Transfer Encoding with NDJSON streaming
-        </div>
+      <h2>📡 Server Status</h2>
+      <div id="status" class="status disconnected">Checking connection...</div>
+      <button onclick="checkHealth()">Check Server Health</button>
+      <button onclick="loadTools()" class="test">Load Available Tools</button>
+      <div id="serverInfo" style="margin-top: 10px; font-size: 14px; color: #666;">
+        Server: http://localhost:3000
       </div>
     </div>
 
     <div class="container">
-      <h2>📡 Connection Status</h2>
-      <div id="status" class="status disconnected">Disconnected</div>
-      <button id="connectBtn" onclick="connect()">Connect to Server</button>
-      <button id="disconnectBtn" onclick="disconnect()" disabled>
-        Disconnect
-      </button>
-      <span id="serverBadge" class="badge" style="display: none"></span>
-    </div>
-
-    <div class="container">
-      <h2>📝 Server Log</h2>
-      <div id="log" class="log">Select a server and connect...</div>
+      <h2>📝 Activity Log</h2>
+      <div id="log" class="log">Ready to connect to MCP Tools server...</div>
       <button onclick="clearLog()">Clear Log</button>
     </div>
 
     <div class="container">
       <h2>🔧 Available Tools</h2>
-      <button onclick="loadTools()">Load Tools</button>
-      <div id="tools-list"></div>
-    </div>
-
-    <div class="container">
-      <h2>🌐 HTTP POST Tool</h2>
-      <div class="tool-form">
-        <h4>Generic HTTP POST Request</h4>
-        <input
-          type="text"
-          id="httpUrl"
-          placeholder="URL (e.g., https://httpbin.org/post)"
-          value="https://httpbin.org/post"
-        />
-        <textarea
-          id="httpData"
-          placeholder='JSON data (e.g., {"key": "value"})'
-        >
-{"message": "Hello from MCP Multi-Client!", "timestamp": "2024-01-01T12:00:00Z"}</textarea
-        >
-        <textarea
-          id="httpHeaders"
-          placeholder='Additional headers (e.g., {"Authorization": "Bearer token"})'
-        >
-{"User-Agent": "MCP-Multi-Client/1.0"}</textarea
-        >
-        <input
-          type="number"
-          id="httpTimeout"
-          placeholder="Timeout (ms)"
-          value="5000"
-        />
-        <div style="display: flex; gap: 10px">
-          <button onclick="callHttpPost()" class="standard">
-            Send POST Request
-          </button>
-          <button
-            onclick="callHttpPostStreaming()"
-            class="streamable"
-            id="streamingBtn"
-            style="display: none"
-          >
-            Send POST Request (Streaming)
-          </button>
-        </div>
-        <div id="httpResult" class="result" style="display: none"></div>
+      <div id="tools-list">
+        <p>Click "Load Available Tools" to see what's available.</p>
       </div>
     </div>
 
     <div class="container">
-      <h2>🌤️ Weather Tool</h2>
-      <div class="tool-form">
-        <h4>Get Weather Information</h4>
-        <input
-          type="text"
-          id="weatherCity"
-          placeholder="City name"
-          value="London"
-        />
-        <input
-          type="text"
-          id="weatherApiKey"
-          placeholder="OpenWeatherMap API Key (optional)"
-        />
-        <select id="weatherUnits">
-          <option value="metric">Metric (°C)</option>
-          <option value="imperial">Imperial (°F)</option>
-          <option value="kelvin">Kelvin</option>
-        </select>
-        <div style="display: flex; gap: 10px">
+      <h2>🎯 Quick Tool Tests</h2>
+      <p>Test each tool with default parameters:</p>
+      <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+        <button onclick="quickTest('greg-test')" class="greg">Test Greg-Test Tool</button>
+        <button onclick="quickTest('get_weather')" class="test">Test Weather Tool</button>
+        <button onclick="quickTest('create_post')" class="test">Test Create Post</button>
+        <button onclick="quickTest('http_post')" class="test">Test HTTP Post</button>
+      </div>
+      <div id="quickTestResult" class="result" style="display: none;"></div>
+    </div>
+
+    <div class="grid">
+      <!-- Greg Test Tool -->
+      <div class="tool-container greg-test">
+        <h3>🎭 Greg Test Tool</h3>
+        <div class="tool-form">
+          <h4>Test Your Mood</h4>
+          <input
+            type="text"
+            id="gregFeeling"
+            placeholder="How are you feeling?"
+            value="excited to test the browser client"
+          />
+          <button onclick="callGregTest()" class="greg">Test Feeling</button>
+          <div id="gregResult" class="result" style="display: none;"></div>
+        </div>
+      </div>
+
+      <!-- Weather Tool -->
+      <div class="tool-container weather">
+        <h3>🌤️ Weather Tool</h3>
+        <div class="tool-form">
+          <h4>Get Weather Information</h4>
+          <input
+            type="text"
+            id="weatherCity"
+            placeholder="City name"
+            value="London"
+          />
+          <input
+            type="text"
+            id="weatherApiKey"
+            placeholder="OpenWeatherMap API Key (optional)"
+          />
+          <select id="weatherUnits">
+            <option value="metric">Metric (°C)</option>
+            <option value="imperial">Imperial (°F)</option>
+            <option value="kelvin">Kelvin</option>
+          </select>
           <button onclick="callWeatherTool()">Get Weather</button>
-          <button
-            onclick="callWeatherToolStreaming()"
-            class="streamable"
-            id="weatherStreamingBtn"
-            style="display: none"
-          >
-            Get Weather (Streaming)
-          </button>
+          <div id="weatherResult" class="result" style="display: none;"></div>
         </div>
-        <div id="weatherResult" class="result" style="display: none"></div>
       </div>
-    </div>
 
-    <div class="container">
-      <h2>📄 Create Post Tool</h2>
-      <div class="tool-form">
-        <h4>Create Post (JSONPlaceholder API)</h4>
-        <input
-          type="text"
-          id="postTitle"
-          placeholder="Post title"
-          value="My Test Post"
-        />
-        <textarea id="postBody" placeholder="Post body">
-This is a test post created via MCP multi-client!</textarea
-        >
-        <input type="number" id="postUserId" placeholder="User ID" value="1" />
-        <div style="display: flex; gap: 10px">
-          <button onclick="callCreatePost()">Create Post</button>
-          <button
-            onclick="callCreatePostStreaming()"
-            class="streamable"
-            id="postStreamingBtn"
-            style="display: none"
+      <!-- HTTP POST Tool -->
+      <div class="tool-container http">
+        <h3>🌐 HTTP POST Tool</h3>
+        <div class="tool-form">
+          <h4>Make HTTP POST Request</h4>
+          <input
+            type="text"
+            id="httpUrl"
+            placeholder="URL"
+            value="https://httpbin.org/post"
+          />
+          <textarea
+            id="httpData"
+            placeholder='JSON data (e.g., {"key": "value"})'
+            rows="3"
           >
-            Create Post (Streaming)
-          </button>
+{"message": "Hello from MCP Browser Client!", "timestamp": "2024-01-01T12:00:00Z"}</textarea
+          >
+          <textarea
+            id="httpHeaders"
+            placeholder='Additional headers (optional)'
+            rows="2"
+          >
+{"User-Agent": "MCP-Browser-Client/1.0"}</textarea
+          >
+          <input
+            type="number"
+            id="httpTimeout"
+            placeholder="Timeout (ms)"
+            value="5000"
+          />
+          <button onclick="callHttpPost()">Send POST Request</button>
+          <div id="httpResult" class="result" style="display: none;"></div>
         </div>
-        <div id="postResult" class="result" style="display: none"></div>
+      </div>
+
+      <!-- Create Post Tool -->
+      <div class="tool-container post">
+        <h3>📄 Create Post Tool</h3>
+        <div class="tool-form">
+          <h4>Create Post (JSONPlaceholder)</h4>
+          <input
+            type="text"
+            id="postTitle"
+            placeholder="Post title"
+            value="My Browser Test Post"
+          />
+          <textarea id="postBody" placeholder="Post body" rows="3">
+This post was created from the MCP Tools browser client!</textarea
+          >
+          <input type="number" id="postUserId" placeholder="User ID" value="1" />
+          <button onclick="callCreatePost()">Create Post</button>
+          <div id="postResult" class="result" style="display: none;"></div>
+        </div>
       </div>
     </div>
 
     <script>
-      let eventSource = null;
-      let streamConnection = null;
-      let currentServerType = 'sse';
-      let currentServerUrl = 'http://localhost:3000';
-
-      // Server configuration
-      const servers = {
-        sse: {
-          url: 'http://localhost:3000',
-          name: 'SSE Server',
-          badge: 'SSE',
-        },
-        streamable: {
-          url: 'http://localhost:3001',
-          name: 'Streamable Server',
-          badge: 'STREAM',
-        },
-      };
-
-      // Initialize server selector
-      document.querySelectorAll('input[name="serverType"]').forEach(radio => {
-        radio.addEventListener('change', function () {
-          currentServerType = this.value;
-          currentServerUrl = servers[currentServerType].url;
-          updateServerInfo();
-
-          // Disconnect if connected
-          if (eventSource || streamConnection) {
-            disconnect();
-          }
-
-          log(`Switched to ${servers[currentServerType].name}`);
-        });
-      });
-
-      function updateServerInfo() {
-        // Update server description
-        document.getElementById('sseInfo').style.display =
-          currentServerType === 'sse' ? 'block' : 'none';
-        document.getElementById('streamableInfo').style.display =
-          currentServerType === 'streamable' ? 'block' : 'none';
-
-        // Show/hide streaming buttons
-        const streamingButtons = [
-          'streamingBtn',
-          'weatherStreamingBtn',
-          'postStreamingBtn',
-        ];
-        streamingButtons.forEach(btnId => {
-          const btn = document.getElementById(btnId);
-          if (btn) {
-            btn.style.display =
-              currentServerType === 'streamable' ? 'inline-block' : 'none';
-          }
-        });
-      }
+      const serverUrl = 'http://localhost:3000';
+      let isConnected = false;
 
       function log(message) {
         const logElement = document.getElementById('log');
@@ -375,314 +276,129 @@ This is a test post created via MCP multi-client!</textarea
         logElement.scrollTop = logElement.scrollHeight;
       }
 
-      function updateStatus(connected) {
+      function updateStatus(connected, message = '') {
         const statusElement = document.getElementById('status');
-        const connectBtn = document.getElementById('connectBtn');
-        const disconnectBtn = document.getElementById('disconnectBtn');
-        const serverBadge = document.getElementById('serverBadge');
+        isConnected = connected;
 
         if (connected) {
-          const serverInfo = servers[currentServerType];
-          statusElement.textContent = `Connected to ${serverInfo.name}`;
+          statusElement.textContent = message || 'Connected to MCP Tools Server';
           statusElement.className = 'status connected';
-          connectBtn.disabled = true;
-          disconnectBtn.disabled = false;
-
-          serverBadge.textContent = serverInfo.badge;
-          serverBadge.className = `badge ${currentServerType}`;
-          serverBadge.style.display = 'inline-block';
         } else {
-          statusElement.textContent = 'Disconnected';
+          statusElement.textContent = message || 'Disconnected from server';
           statusElement.className = 'status disconnected';
-          connectBtn.disabled = false;
-          disconnectBtn.disabled = true;
-          serverBadge.style.display = 'none';
         }
       }
 
-      function connect() {
-        disconnect(); // Clean up any existing connections
-
-        if (currentServerType === 'sse') {
-          connectSSE();
-        } else {
-          connectStreamable();
-        }
-      }
-
-      function connectSSE() {
-        log('Connecting to SSE server...');
-        eventSource = new EventSource(`${currentServerUrl}/mcp/sse`);
-
-        eventSource.onopen = function (event) {
-          log('Connected to SSE server');
-          updateStatus(true);
-        };
-
-        eventSource.onmessage = function (event) {
-          try {
-            const data = JSON.parse(event.data);
-            log(`SSE: ${JSON.stringify(data, null, 2)}`);
-          } catch (e) {
-            log(`SSE: ${event.data}`);
-          }
-        };
-
-        eventSource.onerror = function (event) {
-          log('SSE connection error');
-          updateStatus(false);
-        };
-      }
-
-      async function connectStreamable() {
-        log('Connecting to streamable server...');
-
+      async function checkHealth() {
         try {
-          const response = await fetch(`${currentServerUrl}/mcp/stream-simple`);
-
-          if (!response.ok) {
-            throw new Error(`HTTP ${response.status}`);
+          log('Checking server health...');
+          const response = await fetch(`${serverUrl}/health`);
+          const data = await response.json();
+          
+          if (response.ok) {
+            updateStatus(true, `Connected - ${data.server}`);
+            log(`✅ Server healthy: ${data.server}`);
+          } else {
+            updateStatus(false, 'Server not responding');
+            log('❌ Server health check failed');
           }
-
-          log('Connected to streamable server');
-          updateStatus(true);
-
-          const reader = response.body.getReader();
-          const decoder = new TextDecoder();
-          let buffer = '';
-
-          streamConnection = reader;
-
-          const readStream = async () => {
-            try {
-              while (true) {
-                const { done, value } = await reader.read();
-
-                if (done) {
-                  log('Streamable connection ended');
-                  updateStatus(false);
-                  break;
-                }
-
-                buffer += decoder.decode(value, { stream: true });
-
-                // Process complete JSON lines
-                const lines = buffer.split('\n');
-                buffer = lines.pop(); // Keep incomplete line in buffer
-
-                for (const line of lines) {
-                  if (line.trim()) {
-                    try {
-                      const data = JSON.parse(line);
-                      log(`STREAM: ${JSON.stringify(data, null, 2)}`);
-                    } catch (e) {
-                      log(`STREAM: ${line}`);
-                    }
-                  }
-                }
-              }
-            } catch (error) {
-              log(`Streamable connection error: ${error.message}`);
-              updateStatus(false);
-            }
-          };
-
-          readStream();
         } catch (error) {
-          log(`Failed to connect to streamable server: ${error.message}`);
-          updateStatus(false);
+          updateStatus(false, 'Connection failed');
+          log(`❌ Connection error: ${error.message}`);
         }
-      }
-
-      function disconnect() {
-        if (eventSource) {
-          eventSource.close();
-          eventSource = null;
-          log('Disconnected from SSE server');
-        }
-
-        if (streamConnection) {
-          streamConnection.cancel();
-          streamConnection = null;
-          log('Disconnected from streamable server');
-        }
-
-        updateStatus(false);
-      }
-
-      function clearLog() {
-        document.getElementById('log').textContent = '';
       }
 
       async function loadTools() {
         try {
-          const response = await fetch(`${currentServerUrl}/mcp/tools`);
+          log('Loading available tools...');
+          const response = await fetch(`${serverUrl}/mcp/tools`);
           const data = await response.json();
 
-          const toolsList = document.getElementById('tools-list');
-          toolsList.innerHTML = '<h4>Available Tools:</h4>';
+          if (data.success) {
+            const toolsList = document.getElementById('tools-list');
+            toolsList.innerHTML = `<h4>Available Tools (${data.count}):</h4>`;
 
-          data.tools.forEach(tool => {
-            toolsList.innerHTML += `
-                        <div style="border: 1px solid #ddd; padding: 10px; margin: 5px 0; border-radius: 4px;">
-                            <h5>${tool.name}</h5>
-                            <p>${tool.description}</p>
-                            <pre style="background: #f8f9fa; padding: 5px; border-radius: 4px; font-size: 11px;">${JSON.stringify(tool.inputSchema, null, 2)}</pre>
-                        </div>
-                    `;
-          });
-
-          log('Loaded available tools');
-        } catch (error) {
-          log(`Error loading tools: ${error.message}`);
-        }
-      }
-
-      async function callTool(toolName, parameters, streaming = false) {
-        try {
-          const endpoint =
-            streaming && currentServerType === 'streamable'
-              ? '/mcp/call-tool-stream'
-              : '/mcp/call-tool';
-
-          log(
-            `Calling tool: ${toolName} with parameters: ${JSON.stringify(parameters)} ${streaming ? '(streaming)' : ''}`
-          );
-
-          if (streaming && currentServerType === 'streamable') {
-            return await callToolStreaming(toolName, parameters);
-          } else {
-            const response = await fetch(`${currentServerUrl}${endpoint}`, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
-                tool: toolName,
-                parameters: parameters,
-              }),
+            data.tools.forEach(tool => {
+              toolsList.innerHTML += `
+                <div style="border: 1px solid #ddd; padding: 10px; margin: 5px 0; border-radius: 4px;">
+                  <h5>🔧 ${tool.name}</h5>
+                  <p>${tool.description}</p>
+                  <details>
+                    <summary>View Schema</summary>
+                    <pre style="background: #f8f9fa; padding: 5px; border-radius: 4px; font-size: 11px;">${JSON.stringify(tool.inputSchema, null, 2)}</pre>
+                  </details>
+                </div>
+              `;
             });
 
-            const result = await response.json();
-            log(`Tool result: ${JSON.stringify(result, null, 2)}`);
-            return result;
+            log(`✅ Loaded ${data.count} tools`);
+          } else {
+            log(`❌ Failed to load tools: ${data.error}`);
           }
         } catch (error) {
-          log(`Error calling tool: ${error.message}`);
-          return null;
+          log(`❌ Error loading tools: ${error.message}`);
         }
       }
 
-      async function callToolStreaming(toolName, parameters) {
+      async function quickTest(toolName) {
         try {
-          const response = await fetch(
-            `${currentServerUrl}/mcp/call-tool-stream`,
-            {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
-                tool: toolName,
-                parameters: parameters,
-              }),
-            }
-          );
+          log(`🧪 Quick testing ${toolName}...`);
+          const response = await fetch(`${serverUrl}/mcp/test/${toolName}`);
+          const data = await response.json();
 
-          if (!response.ok) {
-            throw new Error(`HTTP ${response.status}`);
+          const resultDiv = document.getElementById('quickTestResult');
+          resultDiv.style.display = 'block';
+          
+          if (data.success) {
+            resultDiv.textContent = `✅ ${toolName} test successful!\n\n${JSON.stringify(data, null, 2)}`;
+            log(`✅ Quick test ${toolName} successful`);
+          } else {
+            resultDiv.textContent = `❌ ${toolName} test failed: ${data.error}`;
+            log(`❌ Quick test ${toolName} failed: ${data.error}`);
           }
-
-          const reader = response.body.getReader();
-          const decoder = new TextDecoder();
-          let buffer = '';
-          let results = [];
-
-          while (true) {
-            const { done, value } = await reader.read();
-
-            if (done) break;
-
-            buffer += decoder.decode(value, { stream: true });
-
-            const lines = buffer.split('\n');
-            buffer = lines.pop();
-
-            for (const line of lines) {
-              if (line.trim()) {
-                try {
-                  const data = JSON.parse(line);
-                  log(`Streaming result: ${JSON.stringify(data, null, 2)}`);
-                  results.push(data);
-                } catch (e) {
-                  log(`Streaming data: ${line}`);
-                }
-              }
-            }
-          }
-
-          return results[results.length - 1]; // Return the last result
         } catch (error) {
-          log(`Error in streaming tool call: ${error.message}`);
-          return null;
+          log(`❌ Quick test ${toolName} error: ${error.message}`);
         }
       }
 
-      // Tool calling functions
-      async function callHttpPost() {
-        const url = document.getElementById('httpUrl').value;
-        const dataStr = document.getElementById('httpData').value;
-        const headersStr = document.getElementById('httpHeaders').value || '{}';
-        const timeout =
-          parseInt(document.getElementById('httpTimeout').value) || 5000;
-
+      async function callTool(toolName, parameters) {
         try {
-          const data = JSON.parse(dataStr);
-          const headers = JSON.parse(headersStr);
-
-          const result = await callTool('http_post', {
-            url: url,
-            data: data,
-            headers: headers,
-            timeout: timeout,
+          log(`🔧 Calling ${toolName} with parameters: ${JSON.stringify(parameters)}`);
+          
+          const response = await fetch(`${serverUrl}/mcp/call-tool`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              tool: toolName,
+              parameters: parameters,
+            }),
           });
 
-          const resultDiv = document.getElementById('httpResult');
-          resultDiv.style.display = 'block';
-          resultDiv.textContent = JSON.stringify(result, null, 2);
+          const result = await response.json();
+          
+          if (result.success) {
+            log(`✅ ${toolName} call successful`);
+          } else {
+            log(`❌ ${toolName} call failed: ${result.error}`);
+          }
+          
+          return result;
         } catch (error) {
-          alert(`Error: ${error.message}`);
+          log(`❌ Error calling ${toolName}: ${error.message}`);
+          return { success: false, error: error.message };
         }
       }
 
-      async function callHttpPostStreaming() {
-        const url = document.getElementById('httpUrl').value;
-        const dataStr = document.getElementById('httpData').value;
-        const headersStr = document.getElementById('httpHeaders').value || '{}';
-        const timeout =
-          parseInt(document.getElementById('httpTimeout').value) || 5000;
+      // Tool-specific functions
+      async function callGregTest() {
+        const feeling = document.getElementById('gregFeeling').value;
+        const result = await callTool('greg-test', { feeling });
 
-        try {
-          const data = JSON.parse(dataStr);
-          const headers = JSON.parse(headersStr);
-
-          const result = await callTool(
-            'http_post',
-            {
-              url: url,
-              data: data,
-              headers: headers,
-              timeout: timeout,
-            },
-            true
-          );
-
-          const resultDiv = document.getElementById('httpResult');
-          resultDiv.style.display = 'block';
-          resultDiv.textContent = JSON.stringify(result, null, 2);
-        } catch (error) {
-          alert(`Error: ${error.message}`);
-        }
+        const resultDiv = document.getElementById('gregResult');
+        resultDiv.style.display = 'block';
+        resultDiv.textContent = JSON.stringify(result, null, 2);
       }
 
       async function callWeatherTool() {
@@ -702,28 +418,35 @@ This is a test post created via MCP multi-client!</textarea
         resultDiv.textContent = JSON.stringify(result, null, 2);
       }
 
-      async function callWeatherToolStreaming() {
-        const city = document.getElementById('weatherCity').value;
-        const apiKey = document.getElementById('weatherApiKey').value;
-        const units = document.getElementById('weatherUnits').value;
+      async function callHttpPost() {
+        const url = document.getElementById('httpUrl').value;
+        const dataStr = document.getElementById('httpData').value;
+        const headersStr = document.getElementById('httpHeaders').value || '{}';
+        const timeout = parseInt(document.getElementById('httpTimeout').value) || 5000;
 
-        const parameters = { city, units };
-        if (apiKey) {
-          parameters.apiKey = apiKey;
+        try {
+          const data = JSON.parse(dataStr);
+          const headers = JSON.parse(headersStr);
+
+          const result = await callTool('http_post', {
+            url: url,
+            data: data,
+            headers: headers,
+            timeout: timeout,
+          });
+
+          const resultDiv = document.getElementById('httpResult');
+          resultDiv.style.display = 'block';
+          resultDiv.textContent = JSON.stringify(result, null, 2);
+        } catch (error) {
+          alert(`JSON Parse Error: ${error.message}`);
         }
-
-        const result = await callTool('get_weather', parameters, true);
-
-        const resultDiv = document.getElementById('weatherResult');
-        resultDiv.style.display = 'block';
-        resultDiv.textContent = JSON.stringify(result, null, 2);
       }
 
       async function callCreatePost() {
         const title = document.getElementById('postTitle').value;
         const body = document.getElementById('postBody').value;
-        const userId =
-          parseInt(document.getElementById('postUserId').value) || 1;
+        const userId = parseInt(document.getElementById('postUserId').value) || 1;
 
         const result = await callTool('create_post', {
           title: title,
@@ -736,33 +459,15 @@ This is a test post created via MCP multi-client!</textarea
         resultDiv.textContent = JSON.stringify(result, null, 2);
       }
 
-      async function callCreatePostStreaming() {
-        const title = document.getElementById('postTitle').value;
-        const body = document.getElementById('postBody').value;
-        const userId =
-          parseInt(document.getElementById('postUserId').value) || 1;
-
-        const result = await callTool(
-          'create_post',
-          {
-            title: title,
-            body: body,
-            userId: userId,
-          },
-          true
-        );
-
-        const resultDiv = document.getElementById('postResult');
-        resultDiv.style.display = 'block';
-        resultDiv.textContent = JSON.stringify(result, null, 2);
+      function clearLog() {
+        document.getElementById('log').textContent = '';
       }
 
-      // Initialize
+      // Initialize on page load
       window.onload = function () {
-        updateServerInfo();
-        setTimeout(() => {
-          log('Ready to connect. Select a server type and click Connect.');
-        }, 500);
+        log('🚀 MCP Tools Browser Client ready!');
+        log('Click "Check Server Health" to connect.');
+        setTimeout(checkHealth, 1000); // Auto-check health after 1 second
       };
     </script>
   </body>
