@@ -1,4 +1,3 @@
-import { z } from 'zod';
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 
@@ -7,10 +6,15 @@ import {
   ListToolsRequestSchema,
 } from '@modelcontextprotocol/sdk/types.js';
 
-// 1. Create an MCP server instance
+import { MCPToolsManager } from './mcp-tools-manager';
+
+// 1. Create an MCP tools manager instance
+const toolsManager = new MCPToolsManager();
+
+// 2. Create the MCP SDK server instance
 const server = new Server(
   {
-    name: 'cursor-tools',
+    name: 'demo-tools',
     version: '2.0.1',
   },
   {
@@ -20,78 +24,43 @@ const server = new Server(
   }
 );
 
-// 2. Define the list of tools
+// 3. Handle list tools request - dynamically get all tools from MCPToolsManager
 server.setRequestHandler(ListToolsRequestSchema, async () => {
   return {
-    tools: [
-      {
-        name: 'greg-test',
-        description: 'amazing tool',
-        inputSchema: {
-          type: 'object',
-          properties: {
-            feeling: {
-              type: 'string',
-              description: 'Your current mood',
-            },
-          },
-          required: ['feeling'],
-        },
-      },
-    ],
+    tools: toolsManager.getTools(),
   };
 });
 
-const ToolSchema = z.object({
-  feeling: z.string(),
-});
-
-const runFeelingTool = async (args: z.infer<typeof ToolSchema>) => {
-  return {
-    content: [
-      {
-        type: 'text',
-        text: `Your feeling is ${args.feeling}`,
-      },
-    ],
-  };
-};
-
-// 3. Implement the tool call logic
+// 4. Handle tool call requests - delegate to MCPToolsManager
 server.setRequestHandler(CallToolRequestSchema, async request => {
   const { name, arguments: args } = request.params;
 
   try {
-    switch (name) {
-      case 'greg-test': {
-        const validated = ToolSchema.parse(args);
-        return await runFeelingTool(validated);
-      }
-      default:
-        return {
-          isError: true,
-          content: [
-            {
-              type: 'text',
-              text: `Unknown tool: ${request.params.name}`,
-            },
-          ],
-        };
-    }
+    // Use MCPToolsManager to call the tool
+    const result = await toolsManager.callTool(name, args || {});
+
+    return {
+      content: [
+        {
+          type: 'text',
+          text: JSON.stringify(result, null, 2),
+        },
+      ],
+    };
   } catch (error) {
     return {
       isError: true,
       content: [
         {
           type: 'text',
-          text: `Error: ${error}`,
+          text: `Error: ${error instanceof Error ? error.message : String(error)}`,
         },
       ],
     };
   }
 });
 
-// 4. Start the MCP server with a stdio transport
+// 5. Start the MCP server with a stdio transport
 async function main() {
   const transport = new StdioServerTransport();
   await server.connect(transport);
