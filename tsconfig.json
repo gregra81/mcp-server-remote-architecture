@@ -3,6 +3,8 @@
     "target": "ES2020",
     "module": "ESNext",
     "moduleResolution": "node",
+    "allowImportingTsExtensions": false,
+    "noResolve": false,
     "lib": ["ES2020", "DOM"],
     "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,
@@ -14,7 +16,7 @@
     "isolatedModules": true,
     "noEmit": false,
     "outDir": "./dist",
-    "rootDir": "./",
+    "rootDir": "./src",
     "declaration": true,
     "declarationMap": true,
     "sourceMap": true,
@@ -25,19 +27,9 @@
     "noUncheckedIndexedAccess": false,
     "exactOptionalPropertyTypes": false
   },
-  "include": [
-    "src/**/*",
-    "examples/**/*",
-    "demo.ts",
-    "types/**/*"
-  ],
-  "exclude": [
-    "node_modules",
-    "dist",
-    "**/*.html"
-  ],
+  "include": ["src/**/*"],
   "ts-node": {
     "esm": true,
     "experimentalSpecifierResolution": "node"
   }
-} 
+}

@@ -91,12 +91,12 @@ export interface MCPErrorEvent {
   timestamp: string;
 }
 
-export type MCPEvent = 
-  | MCPConnectionEvent 
-  | MCPCapabilitiesEvent 
-  | MCPPingEvent 
-  | MCPStatusEvent 
-  | MCPResultEvent 
+export type MCPEvent =
+  | MCPConnectionEvent
+  | MCPCapabilitiesEvent
+  | MCPPingEvent
+  | MCPStatusEvent
+  | MCPResultEvent
   | MCPErrorEvent;
 
 // Tool Handler Types
@@ -181,4 +181,4 @@ export interface ServerConfigs {
   streamable: ServerConfig;
 }
 
-export type ServerType = 'sse' | 'streamable'; 
+export type ServerType = 'sse' | 'streamable';
