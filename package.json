@@ -9,13 +9,15 @@
     "build:watch": "tsc --watch",
     "clean": "rm -rf dist",
     "start:http": "npm run build && node dist/simple-http-server.js",
+    "start:remote": "npm run build && node dist/examples/remote-tool-server-example.js",
+    "dev:remote": "npx nodemon --exec \"npm run build && node dist/examples/remote-tool-server-example.js\"",
     "type-check": "tsc --noEmit",
     "format": "prettier --write \"src/**/*.{ts,js,json}\" \"examples/**/*.{ts,js,json,html}\" \"*.{json,md}\"",
     "format:check": "prettier --check \"src/**/*.{ts,js,json}\" \"examples/**/*.{ts,js,json,html}\" \"*.{json,md}\""
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.13.0",
-    "axios": "^1.6.0",
+    "axios": "^1.10.0",
     "cors": "^2.8.5",
     "express": "^4.18.2",
     "zod": "^3.25.67"

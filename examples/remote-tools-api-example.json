@@ -1,0 +1,131 @@
+{
+  "version": "1.0",
+  "timestamp": "2024-01-01T00:00:00Z",
+  "tools": [
+    {
+      "name": "calculate_tax",
+      "description": "Calculate tax for a given amount and rate",
+      "executeUrl": "https://api.example.com/tools/calculate-tax",
+      "method": "POST",
+      "timeout": 5000,
+      "headers": {
+        "Authorization": "Bearer your-api-key",
+        "X-Tool-Version": "1.0"
+      },
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "amount": {
+            "type": "number",
+            "description": "The amount to calculate tax for"
+          },
+          "rate": {
+            "type": "number",
+            "description": "Tax rate as decimal (e.g., 0.08 for 8%)"
+          },
+          "currency": {
+            "type": "string",
+            "description": "Currency code",
+            "default": "USD"
+          }
+        },
+        "required": ["amount", "rate"]
+      }
+    },
+    {
+      "name": "send_email",
+      "description": "Send an email via external service",
+      "executeUrl": "https://api.example.com/tools/send-email",
+      "method": "POST",
+      "timeout": 10000,
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "to": {
+            "type": "string",
+            "description": "Email recipient"
+          },
+          "subject": {
+            "type": "string",
+            "description": "Email subject"
+          },
+          "body": {
+            "type": "string",
+            "description": "Email body content"
+          },
+          "html": {
+            "type": "boolean",
+            "description": "Whether body is HTML",
+            "default": false
+          }
+        },
+        "required": ["to", "subject", "body"]
+      }
+    },
+    {
+      "name": "image_ocr",
+      "description": "Extract text from an image using OCR",
+      "executeUrl": "https://api.example.com/tools/image-ocr",
+      "method": "POST",
+      "timeout": 30000,
+      "headers": {
+        "X-OCR-Language": "en"
+      },
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "imageUrl": {
+            "type": "string",
+            "description": "URL of the image to process"
+          },
+          "imageBase64": {
+            "type": "string",
+            "description": "Base64 encoded image data (alternative to imageUrl)"
+          },
+          "language": {
+            "type": "string",
+            "description": "OCR language code",
+            "default": "en"
+          },
+          "confidence": {
+            "type": "number",
+            "description": "Minimum confidence threshold (0-1)",
+            "default": 0.8
+          }
+        },
+        "required": []
+      }
+    },
+    {
+      "name": "database_query",
+      "description": "Execute a read-only database query",
+      "executeUrl": "https://api.example.com/tools/db-query",
+      "method": "POST",
+      "timeout": 15000,
+      "headers": {
+        "X-Database": "analytics",
+        "Authorization": "Bearer db-token"
+      },
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "SQL query to execute (SELECT only)"
+          },
+          "parameters": {
+            "type": "object",
+            "description": "Query parameters for prepared statements",
+            "default": {}
+          },
+          "limit": {
+            "type": "number",
+            "description": "Maximum number of rows to return",
+            "default": 100
+          }
+        },
+        "required": ["query"]
+      }
+    }
+  ]
+} 

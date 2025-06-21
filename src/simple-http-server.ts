@@ -149,16 +149,27 @@ app.get('/mcp/test/:toolName', async (req: Request, res: Response): Promise<void
   }
 });
 
+// Initialize and start the server
+async function startServer() {
+  // Initialize the tools manager first
+  await toolsManager.initialize();
+  
+  app.listen(port, () => {
+    console.log(`🚀 MCP Tools HTTP Server running on http://localhost:${port}`);
+    console.log(`📱 Open http://localhost:${port}/examples/client.html in your browser`);
+    console.log(`🔧 Available endpoints:`);
+    console.log(`   GET  /health - Health check`);
+    console.log(`   GET  /mcp/tools - List available tools`);
+    console.log(`   GET  /mcp/capabilities - Get server capabilities`);
+    console.log(`   POST /mcp/call-tool - Call a tool`);
+    console.log(`   GET  /mcp/test/:toolName - Test a tool with default parameters`);
+  });
+}
+
 // Start the server
-app.listen(port, () => {
-  console.log(`🚀 MCP Tools HTTP Server running on http://localhost:${port}`);
-  console.log(`📱 Open http://localhost:${port}/examples/client.html in your browser`);
-  console.log(`🔧 Available endpoints:`);
-  console.log(`   GET  /health - Health check`);
-  console.log(`   GET  /mcp/tools - List available tools`);
-  console.log(`   GET  /mcp/capabilities - Get server capabilities`);
-  console.log(`   POST /mcp/call-tool - Call a tool`);
-  console.log(`   GET  /mcp/test/:toolName - Test a tool with default parameters`);
+startServer().catch(error => {
+  console.error('Failed to start server:', error);
+  process.exit(1);
 });
 
 export default app; 

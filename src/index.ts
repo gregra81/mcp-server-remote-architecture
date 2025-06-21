@@ -62,6 +62,9 @@ server.setRequestHandler(CallToolRequestSchema, async request => {
 
 // 5. Start the MCP server with a stdio transport
 async function main() {
+  // Initialize the tools manager first
+  await toolsManager.initialize();
+  
   const transport = new StdioServerTransport();
   await server.connect(transport);
   console.error('Cursor Tools MCP Server running on stdio');
