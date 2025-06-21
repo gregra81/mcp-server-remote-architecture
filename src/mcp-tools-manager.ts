@@ -191,26 +191,11 @@ export class MCPToolsManager {
    * Get all available tools (including built-in refresh tool)
    */
   public getTools(): MCPTool[] {
-    const tools = Array.from(this.tools.values()).map(tool => ({
+    return Array.from(this.tools.values()).map(tool => ({
       name: tool.name,
       description: tool.description,
       inputSchema: tool.inputSchema,
     }));
-
-    // Add built-in refresh tool if remote tools are enabled
-    if (this.remoteApiConfig.enabled) {
-      tools.push({
-        name: 'refresh_remote_tools',
-        description: 'Refresh and reload remote tools from the configured API endpoint',
-        inputSchema: {
-          type: 'object',
-          properties: {},
-          required: [],
-        },
-      });
-    }
-
-    return tools;
   }
 
   /**
