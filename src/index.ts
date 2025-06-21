@@ -30,19 +30,38 @@ const server = new Server(
   },
   {
     capabilities: {
-      tools: {},
+      tools: {
+        listChanged: true,  // Declare that we support list change notifications
+      },
     },
   }
 );
 
-// 3. Handle list tools request - dynamically get all tools from MCPToolsManager
+// 3. Set up callback for when tools are refreshed
+toolsManager.setOnToolsChangedCallback(() => {
+  try {
+    // Send notification that tools list has changed
+    // Note: This follows the MCP specification but may not be supported by all clients
+    // Claude Desktop as of 2024/2025 does not support this notification
+    // GitHub Copilot and other clients may support it
+    server.notification({
+      method: 'notifications/tools/list_changed',
+      params: {}
+    });
+    console.error('Remote tools refreshed, sent list_changed notification to client');
+  } catch (error) {
+    console.error('Failed to send list_changed notification:', error);
+  }
+});
+
+// 4. Handle list tools request - dynamically get all tools from MCPToolsManager
 server.setRequestHandler(ListToolsRequestSchema, async () => {
   return {
     tools: toolsManager.getTools(),
   };
 });
 
-// 4. Handle tool call requests - delegate to MCPToolsManager
+// 5. Handle tool call requests - delegate to MCPToolsManager
 server.setRequestHandler(CallToolRequestSchema, async request => {
   const { name, arguments: args } = request.params;
 
@@ -71,7 +90,7 @@ server.setRequestHandler(CallToolRequestSchema, async request => {
   }
 });
 
-// 5. Start the MCP server with a stdio transport
+// 6. Start the MCP server with a stdio transport
 async function main() {
   // Initialize the tools manager first
   await toolsManager.initialize();
@@ -79,6 +98,10 @@ async function main() {
   const transport = new StdioServerTransport();
   await server.connect(transport);
   console.error('Cursor Tools MCP Server running on stdio');
+  console.error('Note: refresh_remote_tools is available but client support for list_changed notifications varies');
+  console.error('- Claude Desktop: Currently does not support list_changed notifications');
+  console.error('- GitHub Copilot: Supports list_changed notifications');
+  console.error('- For Claude Desktop: Use refresh_remote_tools tool then manually refresh the client');
 }
 
 main().catch(error => {

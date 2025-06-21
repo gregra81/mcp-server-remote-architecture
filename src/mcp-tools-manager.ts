@@ -25,12 +25,20 @@ export class MCPToolsManager {
   private localTools: Map<string, MCPToolDefinition>;
   private remoteTools: Map<string, RemoteToolDefinition>;
   private remoteApiConfig: RemoteApiConfig;
+  private onToolsChangedCallback?: () => void;
 
   constructor(remoteApiConfig: RemoteApiConfig = { enabled: false }) {
     this.tools = new Map();
     this.localTools = new Map();
     this.remoteTools = new Map();
     this.remoteApiConfig = remoteApiConfig;
+  }
+
+  /**
+   * Set a callback to be called when tools are refreshed
+   */
+  public setOnToolsChangedCallback(callback: () => void): void {
+    this.onToolsChangedCallback = callback;
   }
 
   /**
@@ -151,6 +159,11 @@ export class MCPToolsManager {
     this.remoteTools.clear();
     await this.loadRemoteTools();
     this.combineTools();
+    
+    // Notify that tools have changed
+    if (this.onToolsChangedCallback) {
+      this.onToolsChangedCallback();
+    }
   }
 
   /**
@@ -160,7 +173,7 @@ export class MCPToolsManager {
     return {
       tools: {
         supported: true,
-        listChanged: false,
+        listChanged: true,
       },
       resources: {
         supported: false,
@@ -175,14 +188,29 @@ export class MCPToolsManager {
   }
 
   /**
-   * Get all available tools
+   * Get all available tools (including built-in refresh tool)
    */
   public getTools(): MCPTool[] {
-    return Array.from(this.tools.values()).map(tool => ({
+    const tools = Array.from(this.tools.values()).map(tool => ({
       name: tool.name,
       description: tool.description,
       inputSchema: tool.inputSchema,
     }));
+
+    // Add built-in refresh tool if remote tools are enabled
+    if (this.remoteApiConfig.enabled) {
+      tools.push({
+        name: 'refresh_remote_tools',
+        description: 'Refresh and reload remote tools from the configured API endpoint',
+        inputSchema: {
+          type: 'object',
+          properties: {},
+          required: [],
+        },
+      });
+    }
+
+    return tools;
   }
 
   /**
@@ -320,6 +348,40 @@ export class MCPToolsManager {
     toolName: string,
     parameters: Record<string, any>
   ): Promise<MCPToolResult> {
+    // Handle built-in refresh tool
+    if (toolName === 'refresh_remote_tools') {
+      if (!this.remoteApiConfig.enabled) {
+        throw new Error('Remote tools are not enabled');
+      }
+      
+      try {
+        const oldRemoteCount = this.remoteTools.size;
+        await this.refreshRemoteTools();
+        const newRemoteCount = this.remoteTools.size;
+        
+        return {
+          tool: toolName,
+          result: {
+            success: true,
+            message: `Successfully refreshed remote tools. Found ${newRemoteCount} remote tools (previously ${oldRemoteCount})`,
+            remoteToolsCount: newRemoteCount,
+            totalToolsCount: this.tools.size,
+            note: "Some MCP clients (like Claude Desktop) may require manual refresh to see updated tools. GitHub Copilot and other clients should automatically update.",
+          },
+          executedAt: new Date().toISOString(),
+        };
+      } catch (error: any) {
+        return {
+          tool: toolName,
+          result: {
+            success: false,
+            error: `Failed to refresh remote tools: ${error.message}`,
+          },
+          executedAt: new Date().toISOString(),
+        };
+      }
+    }
+
     const tool = this.tools.get(toolName);
 
     if (!tool) {
