@@ -31,7 +31,7 @@ const server = new Server(
   {
     capabilities: {
       tools: {
-        listChanged: true,  // Declare that we support list change notifications
+        listChanged: true, // Declare that we support list change notifications
       },
     },
   }
@@ -46,9 +46,11 @@ toolsManager.setOnToolsChangedCallback(() => {
     // GitHub Copilot and other clients may support it
     server.notification({
       method: 'notifications/tools/list_changed',
-      params: {}
+      params: {},
     });
-    console.error('Remote tools refreshed, sent list_changed notification to client');
+    console.error(
+      'Remote tools refreshed, sent list_changed notification to client'
+    );
   } catch (error) {
     console.error('Failed to send list_changed notification:', error);
   }
@@ -98,10 +100,10 @@ async function main() {
   const transport = new StdioServerTransport();
   await server.connect(transport);
   console.error('Cursor Tools MCP Server running on stdio');
-  console.error('Note: refresh_remote_tools is available but client support for list_changed notifications varies');
-  console.error('- Claude Desktop: Currently does not support list_changed notifications');
+  console.error(
+    '- Claude Desktop: Currently does not support list_changed notifications'
+  );
   console.error('- GitHub Copilot: Supports list_changed notifications');
-  console.error('- For Claude Desktop: Use refresh_remote_tools tool then manually refresh the client');
 }
 
 main().catch(error => {

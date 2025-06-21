@@ -215,14 +215,16 @@
 
           if (data.success) {
             const toolsList = document.getElementById('tools-list');
-            toolsList.innerHTML = `<h4>Available Tools (${data.count}):</h4>`;
+            const enabledCount = data.count || 0;
+            toolsList.innerHTML = `<h4>Available Tools (${enabledCount}):</h4>`;
 
             // Show tool statistics if available
             if (data.stats) {
               toolsList.innerHTML += `
                 <div style="background: #e3f2fd; padding: 10px; margin: 10px 0; border-radius: 4px; border-left: 4px solid #2196f3;">
                   <strong>📊 Tool Statistics:</strong><br>
-                  📦 Total: ${data.stats.total} tools<br>
+                  ✅ Enabled: ${enabledCount} tools<br>
+                  📦 Total Available: ${data.stats.total} tools<br>
                   🏠 Local: ${data.stats.local} tools<br>
                   🌐 Remote: ${data.stats.remote} tools<br>
                   🔗 Remote API: ${data.stats.remoteApiEnabled ? 'Enabled' : 'Disabled'}
@@ -230,18 +232,28 @@
               `;
             }
 
-            data.tools.forEach(tool => {
+            if (data.tools.length === 0) {
               toolsList.innerHTML += `
-                <div style="border: 1px solid #ddd; padding: 10px; margin: 5px 0; border-radius: 4px;">
-                  <h5>🔧 ${tool.name}</h5>
-                  <p>${tool.description}</p>
-                  <details>
-                    <summary>View Schema</summary>
-                    <pre style="background: #f8f9fa; padding: 5px; border-radius: 4px; font-size: 11px;">${JSON.stringify(tool.inputSchema, null, 2)}</pre>
-                  </details>
+                <div style="background: #fff3cd; padding: 15px; margin: 10px 0; border-radius: 4px; border-left: 4px solid #ffc107; text-align: center;">
+                  <h5>⚠️ No Tools Available</h5>
+                  <p>All tools are currently disabled. Enable tools via the admin panel:</p>
+                  <a href="admin.html" style="color: #007bff; text-decoration: none; font-weight: bold;">🔧 Open Admin Panel</a>
                 </div>
               `;
-            });
+            } else {
+              data.tools.forEach(tool => {
+                toolsList.innerHTML += `
+                  <div style="border: 1px solid #ddd; padding: 10px; margin: 5px 0; border-radius: 4px;">
+                    <h5>🔧 ${tool.name}</h5>
+                    <p>${tool.description}</p>
+                    <details>
+                      <summary>View Schema</summary>
+                      <pre style="background: #f8f9fa; padding: 5px; border-radius: 4px; font-size: 11px;">${JSON.stringify(tool.inputSchema, null, 2)}</pre>
+                    </details>
+                  </div>
+                `;
+              });
+            }
 
             // Populate quick test buttons dynamically
             const quickTestsContainer = document.getElementById(
@@ -249,16 +261,22 @@
             );
             quickTestsContainer.innerHTML = '';
 
-            data.tools.forEach(tool => {
-              const button = document.createElement('button');
-              button.onclick = () => quickTest(tool.name);
-              button.className = getToolButtonClass(tool.name);
-              button.textContent = `Test ${tool.name}`;
-              quickTestsContainer.appendChild(button);
-            });
+            if (data.tools.length === 0) {
+              quickTestsContainer.innerHTML = `
+                <p style="color: #666; font-style: italic;">No tools available for testing. Enable tools via the admin panel first.</p>
+              `;
+            } else {
+              data.tools.forEach(tool => {
+                const button = document.createElement('button');
+                button.onclick = () => quickTest(tool.name);
+                button.className = getToolButtonClass(tool.name);
+                button.textContent = `Test ${tool.name}`;
+                quickTestsContainer.appendChild(button);
+              });
+            }
 
             log(
-              `✅ Loaded ${data.count} tools (${data.stats?.local || 0} local, ${data.stats?.remote || 0} remote)`
+              `✅ Loaded ${enabledCount} enabled tools out of ${data.stats.total} total (${data.stats?.local || 0} local, ${data.stats?.remote || 0} remote available)`
             );
           } else {
             log(`❌ Failed to load tools: ${data.error}`);
