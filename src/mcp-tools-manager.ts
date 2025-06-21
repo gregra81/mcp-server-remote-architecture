@@ -14,6 +14,7 @@ import type {
 } from './types/mcp.js';
 import { isRemoteToolDefinition, isLocalToolDefinition } from './types/mcp.js';
 import { allTools } from './tools/index.js';
+import { ToolConfigManager } from './tool-config.js';
 
 /**
  * MCP Tools Manager - manages and executes both local and remote tools
@@ -26,12 +27,14 @@ export class MCPToolsManager {
   private remoteTools: Map<string, RemoteToolDefinition>;
   private remoteApiConfig: RemoteApiConfig;
   private onToolsChangedCallback?: () => void;
+  private toolConfigManager: ToolConfigManager;
 
   constructor(remoteApiConfig: RemoteApiConfig = { enabled: false }) {
     this.tools = new Map();
     this.localTools = new Map();
     this.remoteTools = new Map();
     this.remoteApiConfig = remoteApiConfig;
+    this.toolConfigManager = new ToolConfigManager();
   }
 
   /**
@@ -51,6 +54,18 @@ export class MCPToolsManager {
     // Load remote tools if enabled
     if (this.remoteApiConfig.enabled) {
       await this.loadRemoteTools();
+    }
+
+    // Initialize tool configuration manager with all available tools
+    const allToolNames = [
+      ...Array.from(this.localTools.keys()),
+      ...Array.from(this.remoteTools.keys()),
+    ];
+    await this.toolConfigManager.initialize(allToolNames);
+
+    // If remote tools were loaded after initial config creation, update the config
+    if (this.remoteApiConfig.enabled && this.remoteTools.size > 0) {
+      await this.toolConfigManager.updateWithNewTools(allToolNames);
     }
 
     // Combine all tools into the main tools map
@@ -158,8 +173,16 @@ export class MCPToolsManager {
 
     this.remoteTools.clear();
     await this.loadRemoteTools();
+
+    // Update tool configuration to include new remote tools
+    const allToolNames = [
+      ...Array.from(this.localTools.keys()),
+      ...Array.from(this.remoteTools.keys()),
+    ];
+    await this.toolConfigManager.updateWithNewTools(allToolNames);
+
     this.combineTools();
-    
+
     // Notify that tools have changed
     if (this.onToolsChangedCallback) {
       this.onToolsChangedCallback();
@@ -188,32 +211,38 @@ export class MCPToolsManager {
   }
 
   /**
-   * Get all available tools (including built-in refresh tool)
+   * Get all available tools (only enabled tools)
    */
   public getTools(): MCPTool[] {
-    return Array.from(this.tools.values()).map(tool => ({
-      name: tool.name,
-      description: tool.description,
-      inputSchema: tool.inputSchema,
-    }));
+    return Array.from(this.tools.values())
+      .filter(tool => this.toolConfigManager.isToolEnabled(tool.name))
+      .map(tool => ({
+        name: tool.name,
+        description: tool.description,
+        inputSchema: tool.inputSchema,
+      }));
   }
 
   /**
-   * Get tools by type (local or remote)
+   * Get tools by type (local or remote, only enabled tools)
    */
   public getToolsByType(type: 'local' | 'remote'): MCPTool[] {
     if (type === 'local') {
-      return Array.from(this.localTools.values()).map(tool => ({
-        name: tool.name,
-        description: tool.description,
-        inputSchema: tool.inputSchema,
-      }));
+      return Array.from(this.localTools.values())
+        .filter(tool => this.toolConfigManager.isToolEnabled(tool.name))
+        .map(tool => ({
+          name: tool.name,
+          description: tool.description,
+          inputSchema: tool.inputSchema,
+        }));
     } else {
-      return Array.from(this.remoteTools.values()).map(tool => ({
-        name: tool.name,
-        description: tool.description,
-        inputSchema: tool.inputSchema,
-      }));
+      return Array.from(this.remoteTools.values())
+        .filter(tool => this.toolConfigManager.isToolEnabled(tool.name))
+        .map(tool => ({
+          name: tool.name,
+          description: tool.description,
+          inputSchema: tool.inputSchema,
+        }));
     }
   }
 
@@ -339,6 +368,11 @@ export class MCPToolsManager {
       throw new Error(`Tool '${toolName}' not found`);
     }
 
+    // Check if tool is enabled
+    if (!this.toolConfigManager.isToolEnabled(toolName)) {
+      throw new Error(`Tool '${toolName}' is disabled`);
+    }
+
     // Validate parameters
     this.validateParameters(tool, parameters);
 
@@ -380,5 +414,59 @@ export class MCPToolsManager {
       remote: this.remoteTools.size,
       remoteApiEnabled: this.remoteApiConfig.enabled,
     };
+  }
+
+  // Admin methods for tool configuration management
+
+  /**
+   * Get all tool configurations (for admin panel)
+   */
+  public getToolConfigurations(): Array<{
+    toolName: string;
+    enabled: boolean;
+    type: 'local' | 'remote';
+    description: string;
+  }> {
+    const configs = this.toolConfigManager.getAllConfigs();
+    return configs.map(config => {
+      const tool = this.tools.get(config.toolName);
+      const isLocal = this.localTools.has(config.toolName);
+      return {
+        toolName: config.toolName,
+        enabled: config.enabled,
+        type: isLocal ? 'local' : 'remote',
+        description: tool?.description || 'No description available',
+      };
+    });
+  }
+
+  /**
+   * Set tool enabled/disabled state (for admin panel)
+   */
+  public async setToolEnabled(
+    toolName: string,
+    enabled: boolean
+  ): Promise<void> {
+    if (!this.tools.has(toolName)) {
+      throw new Error(`Tool '${toolName}' not found`);
+    }
+
+    await this.toolConfigManager.setToolEnabled(toolName, enabled);
+
+    // Notify that tools have changed
+    if (this.onToolsChangedCallback) {
+      this.onToolsChangedCallback();
+    }
+  }
+
+  /**
+   * Get all available tools (including disabled ones, for admin panel)
+   */
+  public getAllToolsForAdmin(): MCPTool[] {
+    return Array.from(this.tools.values()).map(tool => ({
+      name: tool.name,
+      description: tool.description,
+      inputSchema: tool.inputSchema,
+    }));
   }
 }

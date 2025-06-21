@@ -178,6 +178,60 @@ app.post(
   }
 );
 
+// Admin endpoints for tool configuration management
+
+// Get all tool configurations (for admin panel)
+app.get('/admin/tools', (req: Request, res: Response) => {
+  try {
+    const configurations = toolsManager.getToolConfigurations();
+    res.json({
+      success: true,
+      tools: configurations,
+      count: configurations.length,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
+  }
+});
+
+// Toggle tool enabled/disabled state
+app.post(
+  '/admin/tools/:toolName/toggle',
+  async (req: Request, res: Response): Promise<void> => {
+    try {
+      const { toolName } = req.params;
+      const { enabled } = req.body;
+
+      if (typeof enabled !== 'boolean') {
+        res.status(400).json({
+          success: false,
+          error: 'enabled field must be a boolean',
+        });
+        return;
+      }
+
+      await toolsManager.setToolEnabled(toolName, enabled);
+
+      res.json({
+        success: true,
+        message: `Tool '${toolName}' ${enabled ? 'enabled' : 'disabled'}`,
+        toolName,
+        enabled,
+        timestamp: new Date().toISOString(),
+      });
+    } catch (error) {
+      res.status(400).json({
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+        timestamp: new Date().toISOString(),
+      });
+    }
+  }
+);
+
 // Test endpoint for direct tool testing
 app.get(
   '/mcp/test/:toolName',
@@ -277,6 +331,9 @@ async function startServer() {
     console.log(
       `📱 Open http://localhost:${port}/examples/client.html in your browser`
     );
+    console.log(
+      `🔧 Open http://localhost:${port}/examples/admin.html for admin panel`
+    );
     console.log(`📊 Tool Statistics:`);
     console.log(`   📦 Total tools: ${stats.total}`);
     console.log(`   🏠 Local tools: ${stats.local}`);
@@ -298,6 +355,9 @@ async function startServer() {
     console.log(
       `   GET  /mcp/test/:toolName - Test a tool with default parameters`
     );
+    console.log(`🔐 Admin endpoints:`);
+    console.log(`   GET  /admin/tools - Get tool configurations`);
+    console.log(`   POST /admin/tools/:toolName/toggle - Toggle tool state`);
 
     if (stats.remoteApiEnabled && stats.remote === 0) {
       console.log(`ℹ️  No remote tools loaded. Start remote server with:`);
