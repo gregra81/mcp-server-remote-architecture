@@ -1,4 +1,5 @@
 // MCP Protocol Types
+import type { ZodSchema } from 'zod';
 
 export interface MCPCapabilities {
   tools: {
@@ -107,6 +108,54 @@ export interface MCPToolDefinition {
   description: string;
   inputSchema: JSONSchema;
   handler: MCPToolHandler;
+  zodSchema?: ZodSchema; // Optional Zod schema for validation
+}
+
+// Remote Tool Types
+export interface RemoteToolDefinition {
+  name: string;
+  description: string;
+  inputSchema: JSONSchema;
+  zodSchema?: ZodSchema; // Zod schema for validation
+  executeUrl: string; // URL to POST the request to
+  method?: 'POST' | 'PUT' | 'PATCH'; // HTTP method, defaults to POST
+  headers?: Record<string, string>; // Additional headers to send
+  timeout?: number; // Request timeout in ms
+}
+
+export interface RemoteToolsApiResponse {
+  tools: RemoteToolDefinition[];
+  version?: string;
+  timestamp?: string;
+}
+
+export interface RemoteToolExecutionRequest {
+  tool: string;
+  parameters: Record<string, any>;
+  timestamp: string;
+}
+
+export interface RemoteToolExecutionResponse {
+  success: boolean;
+  result?: any;
+  error?: string;
+  executedAt: string;
+}
+
+// Combined Tool Definition (local or remote)
+export type CombinedToolDefinition = MCPToolDefinition | RemoteToolDefinition;
+
+// Type guards
+export function isRemoteToolDefinition(
+  tool: CombinedToolDefinition
+): tool is RemoteToolDefinition {
+  return 'executeUrl' in tool;
+}
+
+export function isLocalToolDefinition(
+  tool: CombinedToolDefinition
+): tool is MCPToolDefinition {
+  return 'handler' in tool;
 }
 
 // HTTP Tool Types
@@ -182,3 +231,12 @@ export interface ServerConfigs {
 }
 
 export type ServerType = 'sse' | 'streamable';
+
+// Remote API Configuration
+export interface RemoteApiConfig {
+  enabled: boolean;
+  toolsUrl?: string; // URL to fetch available remote tools
+  timeout?: number; // Request timeout in ms
+  retryAttempts?: number; // Number of retry attempts
+  retryDelay?: number; // Delay between retries in ms
+}

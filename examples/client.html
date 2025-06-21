@@ -103,11 +103,6 @@
         max-height: 300px;
         overflow-y: auto;
       }
-      .grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-        gap: 20px;
-      }
       .tool-container {
         border: 2px solid #007bff;
         border-radius: 8px;
@@ -135,7 +130,10 @@
       <div id="status" class="status disconnected">Checking connection...</div>
       <button onclick="checkHealth()">Check Server Health</button>
       <button onclick="loadTools()" class="test">Load Available Tools</button>
-      <div id="serverInfo" style="margin-top: 10px; font-size: 14px; color: #666;">
+      <div
+        id="serverInfo"
+        style="margin-top: 10px; font-size: 14px; color: #666"
+      >
         Server: http://localhost:3000
       </div>
     </div>
@@ -156,113 +154,13 @@
     <div class="container">
       <h2>🎯 Quick Tool Tests</h2>
       <p>Test each tool with default parameters:</p>
-      <div style="display: flex; flex-wrap: wrap; gap: 10px;">
-        <button onclick="quickTest('greg-test')" class="greg">Test Greg-Test Tool</button>
-        <button onclick="quickTest('get_weather')" class="test">Test Weather Tool</button>
-        <button onclick="quickTest('create_post')" class="test">Test Create Post</button>
-        <button onclick="quickTest('http_post')" class="test">Test HTTP Post</button>
+      <div
+        id="quick-tests-container"
+        style="display: flex; flex-wrap: wrap; gap: 10px"
+      >
+        <p>Load tools first to see quick test options.</p>
       </div>
-      <div id="quickTestResult" class="result" style="display: none;"></div>
-    </div>
-
-    <div class="grid">
-      <!-- Greg Test Tool -->
-      <div class="tool-container greg-test">
-        <h3>🎭 Greg Test Tool</h3>
-        <div class="tool-form">
-          <h4>Test Your Mood</h4>
-          <input
-            type="text"
-            id="gregFeeling"
-            placeholder="How are you feeling?"
-            value="excited to test the browser client"
-          />
-          <button onclick="callGregTest()" class="greg">Test Feeling</button>
-          <div id="gregResult" class="result" style="display: none;"></div>
-        </div>
-      </div>
-
-      <!-- Weather Tool -->
-      <div class="tool-container weather">
-        <h3>🌤️ Weather Tool</h3>
-        <div class="tool-form">
-          <h4>Get Weather Information</h4>
-          <input
-            type="text"
-            id="weatherCity"
-            placeholder="City name"
-            value="London"
-          />
-          <input
-            type="text"
-            id="weatherApiKey"
-            placeholder="OpenWeatherMap API Key (optional)"
-          />
-          <select id="weatherUnits">
-            <option value="metric">Metric (°C)</option>
-            <option value="imperial">Imperial (°F)</option>
-            <option value="kelvin">Kelvin</option>
-          </select>
-          <button onclick="callWeatherTool()">Get Weather</button>
-          <div id="weatherResult" class="result" style="display: none;"></div>
-        </div>
-      </div>
-
-      <!-- HTTP POST Tool -->
-      <div class="tool-container http">
-        <h3>🌐 HTTP POST Tool</h3>
-        <div class="tool-form">
-          <h4>Make HTTP POST Request</h4>
-          <input
-            type="text"
-            id="httpUrl"
-            placeholder="URL"
-            value="https://httpbin.org/post"
-          />
-          <textarea
-            id="httpData"
-            placeholder='JSON data (e.g., {"key": "value"})'
-            rows="3"
-          >
-{"message": "Hello from MCP Browser Client!", "timestamp": "2024-01-01T12:00:00Z"}</textarea
-          >
-          <textarea
-            id="httpHeaders"
-            placeholder='Additional headers (optional)'
-            rows="2"
-          >
-{"User-Agent": "MCP-Browser-Client/1.0"}</textarea
-          >
-          <input
-            type="number"
-            id="httpTimeout"
-            placeholder="Timeout (ms)"
-            value="5000"
-          />
-          <button onclick="callHttpPost()">Send POST Request</button>
-          <div id="httpResult" class="result" style="display: none;"></div>
-        </div>
-      </div>
-
-      <!-- Create Post Tool -->
-      <div class="tool-container post">
-        <h3>📄 Create Post Tool</h3>
-        <div class="tool-form">
-          <h4>Create Post (JSONPlaceholder)</h4>
-          <input
-            type="text"
-            id="postTitle"
-            placeholder="Post title"
-            value="My Browser Test Post"
-          />
-          <textarea id="postBody" placeholder="Post body" rows="3">
-This post was created from the MCP Tools browser client!</textarea
-          >
-          <input type="number" id="postUserId" placeholder="User ID" value="1" />
-          <button onclick="callCreatePost()">Create Post</button>
-          <div id="postResult" class="result" style="display: none;"></div>
-        </div>
-      </div>
+      <div id="quickTestResult" class="result" style="display: none"></div>
     </div>
 
     <script>
@@ -281,7 +179,8 @@ This post was created from the MCP Tools browser client!</textarea
         isConnected = connected;
 
         if (connected) {
-          statusElement.textContent = message || 'Connected to MCP Tools Server';
+          statusElement.textContent =
+            message || 'Connected to MCP Tools Server';
           statusElement.className = 'status connected';
         } else {
           statusElement.textContent = message || 'Disconnected from server';
@@ -294,7 +193,7 @@ This post was created from the MCP Tools browser client!</textarea
           log('Checking server health...');
           const response = await fetch(`${serverUrl}/health`);
           const data = await response.json();
-          
+
           if (response.ok) {
             updateStatus(true, `Connected - ${data.server}`);
             log(`✅ Server healthy: ${data.server}`);
@@ -318,6 +217,19 @@ This post was created from the MCP Tools browser client!</textarea
             const toolsList = document.getElementById('tools-list');
             toolsList.innerHTML = `<h4>Available Tools (${data.count}):</h4>`;
 
+            // Show tool statistics if available
+            if (data.stats) {
+              toolsList.innerHTML += `
+                <div style="background: #e3f2fd; padding: 10px; margin: 10px 0; border-radius: 4px; border-left: 4px solid #2196f3;">
+                  <strong>📊 Tool Statistics:</strong><br>
+                  📦 Total: ${data.stats.total} tools<br>
+                  🏠 Local: ${data.stats.local} tools<br>
+                  🌐 Remote: ${data.stats.remote} tools<br>
+                  🔗 Remote API: ${data.stats.remoteApiEnabled ? 'Enabled' : 'Disabled'}
+                </div>
+              `;
+            }
+
             data.tools.forEach(tool => {
               toolsList.innerHTML += `
                 <div style="border: 1px solid #ddd; padding: 10px; margin: 5px 0; border-radius: 4px;">
@@ -331,13 +243,44 @@ This post was created from the MCP Tools browser client!</textarea
               `;
             });
 
-            log(`✅ Loaded ${data.count} tools`);
+            // Populate quick test buttons dynamically
+            const quickTestsContainer = document.getElementById(
+              'quick-tests-container'
+            );
+            quickTestsContainer.innerHTML = '';
+
+            data.tools.forEach(tool => {
+              const button = document.createElement('button');
+              button.onclick = () => quickTest(tool.name);
+              button.className = getToolButtonClass(tool.name);
+              button.textContent = `Test ${tool.name}`;
+              quickTestsContainer.appendChild(button);
+            });
+
+            log(
+              `✅ Loaded ${data.count} tools (${data.stats?.local || 0} local, ${data.stats?.remote || 0} remote)`
+            );
           } else {
             log(`❌ Failed to load tools: ${data.error}`);
           }
         } catch (error) {
           log(`❌ Error loading tools: ${error.message}`);
         }
+      }
+
+      function getToolButtonClass(toolName) {
+        // Assign CSS classes based on tool name for styling
+        const classMap = {
+          'greg-test': 'greg',
+          get_weather: 'test',
+          create_post: 'test',
+          http_post: 'test',
+          calculate_tax: 'test',
+          send_email: 'test',
+          image_ocr: 'test',
+          database_query: 'test',
+        };
+        return classMap[toolName] || 'test';
       }
 
       async function quickTest(toolName) {
@@ -348,7 +291,7 @@ This post was created from the MCP Tools browser client!</textarea
 
           const resultDiv = document.getElementById('quickTestResult');
           resultDiv.style.display = 'block';
-          
+
           if (data.success) {
             resultDiv.textContent = `✅ ${toolName} test successful!\n\n${JSON.stringify(data, null, 2)}`;
             log(`✅ Quick test ${toolName} successful`);
@@ -363,8 +306,10 @@ This post was created from the MCP Tools browser client!</textarea
 
       async function callTool(toolName, parameters) {
         try {
-          log(`🔧 Calling ${toolName} with parameters: ${JSON.stringify(parameters)}`);
-          
+          log(
+            `🔧 Calling ${toolName} with parameters: ${JSON.stringify(parameters)}`
+          );
+
           const response = await fetch(`${serverUrl}/mcp/call-tool`, {
             method: 'POST',
             headers: {
@@ -377,13 +322,13 @@ This post was created from the MCP Tools browser client!</textarea
           });
 
           const result = await response.json();
-          
+
           if (result.success) {
             log(`✅ ${toolName} call successful`);
           } else {
             log(`❌ ${toolName} call failed: ${result.error}`);
           }
-          
+
           return result;
         } catch (error) {
           log(`❌ Error calling ${toolName}: ${error.message}`);
@@ -422,7 +367,8 @@ This post was created from the MCP Tools browser client!</textarea
         const url = document.getElementById('httpUrl').value;
         const dataStr = document.getElementById('httpData').value;
         const headersStr = document.getElementById('httpHeaders').value || '{}';
-        const timeout = parseInt(document.getElementById('httpTimeout').value) || 5000;
+        const timeout =
+          parseInt(document.getElementById('httpTimeout').value) || 5000;
 
         try {
           const data = JSON.parse(dataStr);
@@ -446,7 +392,8 @@ This post was created from the MCP Tools browser client!</textarea
       async function callCreatePost() {
         const title = document.getElementById('postTitle').value;
         const body = document.getElementById('postBody').value;
-        const userId = parseInt(document.getElementById('postUserId').value) || 1;
+        const userId =
+          parseInt(document.getElementById('postUserId').value) || 1;
 
         const result = await callTool('create_post', {
           title: title,
