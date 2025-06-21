@@ -333,40 +333,6 @@ export class MCPToolsManager {
     toolName: string,
     parameters: Record<string, any>
   ): Promise<MCPToolResult> {
-    // Handle built-in refresh tool
-    if (toolName === 'refresh_remote_tools') {
-      if (!this.remoteApiConfig.enabled) {
-        throw new Error('Remote tools are not enabled');
-      }
-      
-      try {
-        const oldRemoteCount = this.remoteTools.size;
-        await this.refreshRemoteTools();
-        const newRemoteCount = this.remoteTools.size;
-        
-        return {
-          tool: toolName,
-          result: {
-            success: true,
-            message: `Successfully refreshed remote tools. Found ${newRemoteCount} remote tools (previously ${oldRemoteCount})`,
-            remoteToolsCount: newRemoteCount,
-            totalToolsCount: this.tools.size,
-            note: "Some MCP clients (like Claude Desktop) may require manual refresh to see updated tools. GitHub Copilot and other clients should automatically update.",
-          },
-          executedAt: new Date().toISOString(),
-        };
-      } catch (error: any) {
-        return {
-          tool: toolName,
-          result: {
-            success: false,
-            error: `Failed to refresh remote tools: ${error.message}`,
-          },
-          executedAt: new Date().toISOString(),
-        };
-      }
-    }
-
     const tool = this.tools.get(toolName);
 
     if (!tool) {
