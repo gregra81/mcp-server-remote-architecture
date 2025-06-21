@@ -12,10 +12,7 @@ import type {
   CombinedToolDefinition,
   RemoteApiConfig,
 } from './types/mcp.js';
-import {
-  isRemoteToolDefinition,
-  isLocalToolDefinition,
-} from './types/mcp.js';
+import { isRemoteToolDefinition, isLocalToolDefinition } from './types/mcp.js';
 import { allTools } from './tools/index.js';
 
 /**
@@ -42,7 +39,7 @@ export class MCPToolsManager {
   public async initialize(): Promise<void> {
     // Load local tools first
     this.initializeLocalTools();
-    
+
     // Load remote tools if enabled
     if (this.remoteApiConfig.enabled) {
       await this.loadRemoteTools();
@@ -76,11 +73,13 @@ export class MCPToolsManager {
 
     const maxRetries = this.remoteApiConfig.retryAttempts || 3;
     const retryDelay = this.remoteApiConfig.retryDelay || 1000;
-    
+
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
-        console.log(`Loading remote tools from ${this.remoteApiConfig.toolsUrl} (attempt ${attempt}/${maxRetries})`);
-        
+        console.log(
+          `Loading remote tools from ${this.remoteApiConfig.toolsUrl} (attempt ${attempt}/${maxRetries})`
+        );
+
         const response: AxiosResponse<RemoteToolsApiResponse> = await axios.get(
           this.remoteApiConfig.toolsUrl,
           {
@@ -96,14 +95,19 @@ export class MCPToolsManager {
           response.data.tools.forEach(tool => {
             this.remoteTools.set(tool.name, tool);
           });
-          console.log(`Successfully loaded ${response.data.tools.length} remote tools`);
+          console.log(
+            `Successfully loaded ${response.data.tools.length} remote tools`
+          );
           return;
         } else {
           throw new Error('Invalid response format: missing tools array');
         }
       } catch (error: any) {
-        console.error(`Failed to load remote tools (attempt ${attempt}/${maxRetries}):`, error.message);
-        
+        console.error(
+          `Failed to load remote tools (attempt ${attempt}/${maxRetries}):`,
+          error.message
+        );
+
         if (attempt < maxRetries) {
           console.log(`Retrying in ${retryDelay}ms...`);
           await new Promise(resolve => setTimeout(resolve, retryDelay));
@@ -119,16 +123,18 @@ export class MCPToolsManager {
    */
   private combineTools(): void {
     this.tools.clear();
-    
+
     // Add local tools
     this.localTools.forEach((tool, name) => {
       this.tools.set(name, tool);
     });
-    
+
     // Add remote tools (remote tools can override local ones with same name)
     this.remoteTools.forEach((tool, name) => {
       if (this.tools.has(name)) {
-        console.warn(`Remote tool '${name}' is overriding local tool with same name`);
+        console.warn(
+          `Remote tool '${name}' is overriding local tool with same name`
+        );
       }
       this.tools.set(name, tool);
     });
@@ -201,7 +207,10 @@ export class MCPToolsManager {
   /**
    * Validate parameters using Zod schema if available, otherwise basic validation
    */
-  private validateParameters(tool: CombinedToolDefinition, parameters: Record<string, any>): void {
+  private validateParameters(
+    tool: CombinedToolDefinition,
+    parameters: Record<string, any>
+  ): void {
     // Try Zod validation first if schema is available
     if (tool.zodSchema) {
       try {
@@ -209,7 +218,9 @@ export class MCPToolsManager {
         return;
       } catch (error) {
         if (error instanceof ZodError) {
-          const issues = error.issues.map(issue => `${issue.path.join('.')}: ${issue.message}`).join(', ');
+          const issues = error.issues
+            .map(issue => `${issue.path.join('.')}: ${issue.message}`)
+            .join(', ');
           throw new Error(`Validation failed: ${issues}`);
         }
         throw error;
@@ -231,7 +242,7 @@ export class MCPToolsManager {
         if (propSchema && propSchema.type) {
           const actualType = typeof value;
           const expectedType = propSchema.type;
-          
+
           if (expectedType === 'string' && actualType !== 'string') {
             throw new Error(`Parameter '${key}' must be a string`);
           }
@@ -241,7 +252,10 @@ export class MCPToolsManager {
           if (expectedType === 'boolean' && actualType !== 'boolean') {
             throw new Error(`Parameter '${key}' must be a boolean`);
           }
-          if (expectedType === 'object' && (actualType !== 'object' || value === null)) {
+          if (
+            expectedType === 'object' &&
+            (actualType !== 'object' || value === null)
+          ) {
             throw new Error(`Parameter '${key}' must be an object`);
           }
         }
@@ -286,9 +300,13 @@ export class MCPToolsManager {
       }
     } catch (error: any) {
       if (error.response) {
-        throw new Error(`Remote tool execution failed: ${error.response.status} ${error.response.statusText}`);
+        throw new Error(
+          `Remote tool execution failed: ${error.response.status} ${error.response.statusText}`
+        );
       } else if (error.request) {
-        throw new Error(`Remote tool execution failed: No response from server`);
+        throw new Error(
+          `Remote tool execution failed: No response from server`
+        );
       } else {
         throw new Error(`Remote tool execution failed: ${error.message}`);
       }

@@ -146,11 +146,15 @@ export interface RemoteToolExecutionResponse {
 export type CombinedToolDefinition = MCPToolDefinition | RemoteToolDefinition;
 
 // Type guards
-export function isRemoteToolDefinition(tool: CombinedToolDefinition): tool is RemoteToolDefinition {
+export function isRemoteToolDefinition(
+  tool: CombinedToolDefinition
+): tool is RemoteToolDefinition {
   return 'executeUrl' in tool;
 }
 
-export function isLocalToolDefinition(tool: CombinedToolDefinition): tool is MCPToolDefinition {
+export function isLocalToolDefinition(
+  tool: CombinedToolDefinition
+): tool is MCPToolDefinition {
   return 'handler' in tool;
 }
 

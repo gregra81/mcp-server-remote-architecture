@@ -8,8 +8,19 @@ import {
 
 import { MCPToolsManager } from './mcp-tools-manager.js';
 
+import type { RemoteApiConfig } from './types/mcp';
+
+// Configure remote tools support
+const remoteApiConfig: RemoteApiConfig = {
+  enabled: process.env.REMOTE_TOOLS_ENABLED !== 'false', // Enabled by default, set to 'false' to disable
+  toolsUrl: process.env.REMOTE_TOOLS_URL || 'http://localhost:3001/mcp/tools',
+  timeout: parseInt(process.env.REMOTE_TOOLS_TIMEOUT || '5000'),
+  retryAttempts: parseInt(process.env.REMOTE_TOOLS_RETRY_ATTEMPTS || '2'),
+  retryDelay: parseInt(process.env.REMOTE_TOOLS_RETRY_DELAY || '1000'),
+};
+
 // 1. Create an MCP tools manager instance
-const toolsManager = new MCPToolsManager();
+const toolsManager = new MCPToolsManager(remoteApiConfig);
 
 // 2. Create the MCP SDK server instance
 const server = new Server(
@@ -64,7 +75,7 @@ server.setRequestHandler(CallToolRequestSchema, async request => {
 async function main() {
   // Initialize the tools manager first
   await toolsManager.initialize();
-  
+
   const transport = new StdioServerTransport();
   await server.connect(transport);
   console.error('Cursor Tools MCP Server running on stdio');
