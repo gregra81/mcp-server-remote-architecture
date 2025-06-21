@@ -184,7 +184,7 @@ Then add to your MCP configuration:
   "mcpServers": {
     "demo-tools": {
       "command": "node",
-      "args": ["path/to/dead-simple-mcp-server/dist/index.js"]
+      "args": ["path/to/mcp-server-remote-architecture/dist/index.js"]
     }
   }
 }
