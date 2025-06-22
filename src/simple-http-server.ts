@@ -23,7 +23,7 @@ const remoteApiConfig: RemoteApiConfig = {
 };
 
 // Create MCP Tools Manager instance with remote tools support
-const toolsManager = new MCPToolsManager(remoteApiConfig);
+const toolsManager = new MCPToolsManager(null, remoteApiConfig);
 
 // Serve static files (including the client.html)
 app.use('/examples', express.static(path.join(process.cwd(), 'examples')));

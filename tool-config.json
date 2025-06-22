@@ -1,7 +1,7 @@
 [
   {
     "toolName": "http_post",
-    "enabled": false
+    "enabled": true
   },
   {
     "toolName": "get_weather",
@@ -9,26 +9,10 @@
   },
   {
     "toolName": "create_post",
-    "enabled": true
+    "enabled": false
   },
   {
     "toolName": "greg-test",
     "enabled": true
-  },
-  {
-    "toolName": "calculate_tax",
-    "enabled": false
-  },
-  {
-    "toolName": "send_email",
-    "enabled": true
-  },
-  {
-    "toolName": "image_ocr",
-    "enabled": false
-  },
-  {
-    "toolName": "database_query",
-    "enabled": false
   }
 ]

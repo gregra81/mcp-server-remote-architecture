@@ -1,5 +1,8 @@
 import axios, { AxiosResponse } from 'axios';
-import { ZodSchema, ZodError } from 'zod';
+import { ZodError } from 'zod';
+
+import type { Server } from '@modelcontextprotocol/sdk/server/index.js';
+
 import type {
   MCPCapabilities,
   MCPTool,
@@ -26,22 +29,19 @@ export class MCPToolsManager {
   private localTools: Map<string, MCPToolDefinition>;
   private remoteTools: Map<string, RemoteToolDefinition>;
   private remoteApiConfig: RemoteApiConfig;
-  private onToolsChangedCallback?: () => void;
+  private server: Server | null;
   private toolConfigManager: ToolConfigManager;
 
-  constructor(remoteApiConfig: RemoteApiConfig = { enabled: false }) {
+  constructor(
+    server: Server | null,
+    remoteApiConfig: RemoteApiConfig = { enabled: false }
+  ) {
+    this.server = server;
     this.tools = new Map();
     this.localTools = new Map();
     this.remoteTools = new Map();
     this.remoteApiConfig = remoteApiConfig;
     this.toolConfigManager = new ToolConfigManager();
-  }
-
-  /**
-   * Set a callback to be called when tools are refreshed
-   */
-  public setOnToolsChangedCallback(callback: () => void): void {
-    this.onToolsChangedCallback = callback;
   }
 
   /**
@@ -184,9 +184,7 @@ export class MCPToolsManager {
     this.combineTools();
 
     // Notify that tools have changed
-    if (this.onToolsChangedCallback) {
-      this.onToolsChangedCallback();
-    }
+    await this.sendToolsChangedNotification();
   }
 
   /**
@@ -243,6 +241,142 @@ export class MCPToolsManager {
           description: tool.description,
           inputSchema: tool.inputSchema,
         }));
+    }
+  }
+
+  /**
+   * Call a specific tool (local or remote)
+   */
+  public async callTool(
+    toolName: string,
+    parameters: Record<string, any>
+  ): Promise<MCPToolResult> {
+    const tool = this.tools.get(toolName);
+
+    if (!tool) {
+      throw new Error(`Tool '${toolName}' not found`);
+    }
+
+    // Check if tool is enabled
+    if (!this.toolConfigManager.isToolEnabled(toolName)) {
+      throw new Error(`Tool '${toolName}' is disabled`);
+    }
+
+    // Validate parameters
+    this.validateParameters(tool, parameters);
+
+    try {
+      let result: any;
+
+      if (isLocalToolDefinition(tool)) {
+        // Execute local tool
+        result = await tool.handler(parameters);
+      } else if (isRemoteToolDefinition(tool)) {
+        // Execute remote tool
+        result = await this.executeRemoteTool(tool, parameters);
+      } else {
+        throw new Error(`Invalid tool type for '${toolName}'`);
+      }
+
+      return {
+        tool: toolName,
+        result: result,
+        executedAt: new Date().toISOString(),
+      };
+    } catch (error: any) {
+      throw new Error(`Tool execution failed: ${error.message}`);
+    }
+  }
+
+  /**
+   * Get tool statistics
+   */
+  public getToolStats(): {
+    total: number;
+    local: number;
+    remote: number;
+    remoteApiEnabled: boolean;
+  } {
+    return {
+      total: this.tools.size,
+      local: this.localTools.size,
+      remote: this.remoteTools.size,
+      remoteApiEnabled: this.remoteApiConfig.enabled,
+    };
+  }
+
+  // Admin methods for tool configuration management
+
+  /**
+   * Get all tool configurations (for admin panel)
+   */
+  public getToolConfigurations(): Array<{
+    toolName: string;
+    enabled: boolean;
+    type: 'local' | 'remote';
+    description: string;
+  }> {
+    const configs = this.toolConfigManager.getAllConfigs();
+    return configs.map(config => {
+      const tool = this.tools.get(config.toolName);
+      const isLocal = this.localTools.has(config.toolName);
+      return {
+        toolName: config.toolName,
+        enabled: config.enabled,
+        type: isLocal ? 'local' : 'remote',
+        description: tool?.description || 'No description available',
+      };
+    });
+  }
+
+  /**
+   * Set tool enabled/disabled state (for admin panel)
+   */
+  public async setToolEnabled(
+    toolName: string,
+    enabled: boolean
+  ): Promise<void> {
+    if (!this.tools.has(toolName)) {
+      throw new Error(`Tool '${toolName}' not found`);
+    }
+
+    await this.toolConfigManager.setToolEnabled(toolName, enabled);
+
+    // Notify that tools have changed
+    await this.sendToolsChangedNotification();
+  }
+
+  /**
+   * Get all available tools (including disabled ones, for admin panel)
+   */
+  public getAllToolsForAdmin(): MCPTool[] {
+    return Array.from(this.tools.values()).map(tool => ({
+      name: tool.name,
+      description: tool.description,
+      inputSchema: tool.inputSchema,
+    }));
+  }
+
+  /** PRIVATE METHODS */
+
+  /**
+    * Send notification that tools list has changed, 
+    * see here: https://modelcontextprotocol.info/specification/2024-11-05/server/tools/#list-changed-notification
+    * Note: This follows the MCP specification but may not be supported by all clients
+    * Cursor and Claude Desktop as of 2025 does not support this notification
+    * GitHub Copilot and other clients may support it
+   */
+  private async sendToolsChangedNotification(): Promise<void> {
+    try {
+      this.server?.notification({
+        method: 'notifications/tools/list_changed',
+        params: {},
+      });
+      console.info(
+        'Remote tools refreshed, sent list_changed notification to client'
+      );
+    } catch (error) {
+      console.error('Failed to send list_changed notification:', error);
     }
   }
 
@@ -353,120 +487,5 @@ export class MCPToolsManager {
         throw new Error(`Remote tool execution failed: ${error.message}`);
       }
     }
-  }
-
-  /**
-   * Call a specific tool (local or remote)
-   */
-  public async callTool(
-    toolName: string,
-    parameters: Record<string, any>
-  ): Promise<MCPToolResult> {
-    const tool = this.tools.get(toolName);
-
-    if (!tool) {
-      throw new Error(`Tool '${toolName}' not found`);
-    }
-
-    // Check if tool is enabled
-    if (!this.toolConfigManager.isToolEnabled(toolName)) {
-      throw new Error(`Tool '${toolName}' is disabled`);
-    }
-
-    // Validate parameters
-    this.validateParameters(tool, parameters);
-
-    try {
-      let result: any;
-
-      if (isLocalToolDefinition(tool)) {
-        // Execute local tool
-        result = await tool.handler(parameters);
-      } else if (isRemoteToolDefinition(tool)) {
-        // Execute remote tool
-        result = await this.executeRemoteTool(tool, parameters);
-      } else {
-        throw new Error(`Invalid tool type for '${toolName}'`);
-      }
-
-      return {
-        tool: toolName,
-        result: result,
-        executedAt: new Date().toISOString(),
-      };
-    } catch (error: any) {
-      throw new Error(`Tool execution failed: ${error.message}`);
-    }
-  }
-
-  /**
-   * Get tool statistics
-   */
-  public getToolStats(): {
-    total: number;
-    local: number;
-    remote: number;
-    remoteApiEnabled: boolean;
-  } {
-    return {
-      total: this.tools.size,
-      local: this.localTools.size,
-      remote: this.remoteTools.size,
-      remoteApiEnabled: this.remoteApiConfig.enabled,
-    };
-  }
-
-  // Admin methods for tool configuration management
-
-  /**
-   * Get all tool configurations (for admin panel)
-   */
-  public getToolConfigurations(): Array<{
-    toolName: string;
-    enabled: boolean;
-    type: 'local' | 'remote';
-    description: string;
-  }> {
-    const configs = this.toolConfigManager.getAllConfigs();
-    return configs.map(config => {
-      const tool = this.tools.get(config.toolName);
-      const isLocal = this.localTools.has(config.toolName);
-      return {
-        toolName: config.toolName,
-        enabled: config.enabled,
-        type: isLocal ? 'local' : 'remote',
-        description: tool?.description || 'No description available',
-      };
-    });
-  }
-
-  /**
-   * Set tool enabled/disabled state (for admin panel)
-   */
-  public async setToolEnabled(
-    toolName: string,
-    enabled: boolean
-  ): Promise<void> {
-    if (!this.tools.has(toolName)) {
-      throw new Error(`Tool '${toolName}' not found`);
-    }
-
-    await this.toolConfigManager.setToolEnabled(toolName, enabled);
-
-    // Notify that tools have changed
-    if (this.onToolsChangedCallback) {
-      this.onToolsChangedCallback();
-    }
-  }
-
-  /**
-   * Get all available tools (including disabled ones, for admin panel)
-   */
-  public getAllToolsForAdmin(): MCPTool[] {
-    return Array.from(this.tools.values()).map(tool => ({
-      name: tool.name,
-      description: tool.description,
-      inputSchema: tool.inputSchema,
-    }));
   }
 }

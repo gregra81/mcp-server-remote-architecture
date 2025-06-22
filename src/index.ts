@@ -19,10 +19,7 @@ const remoteApiConfig: RemoteApiConfig = {
   retryDelay: parseInt(process.env.REMOTE_TOOLS_RETRY_DELAY || '1000'),
 };
 
-// 1. Create an MCP tools manager instance
-const toolsManager = new MCPToolsManager(remoteApiConfig);
-
-// 2. Create the MCP SDK server instance
+// 1. Create the MCP SDK server instance
 const server = new Server(
   {
     name: 'demo-tools',
@@ -37,24 +34,8 @@ const server = new Server(
   }
 );
 
-// 3. Set up callback for when tools are refreshed
-toolsManager.setOnToolsChangedCallback(() => {
-  try {
-    // Send notification that tools list has changed
-    // Note: This follows the MCP specification but may not be supported by all clients
-    // Claude Desktop as of 2024/2025 does not support this notification
-    // GitHub Copilot and other clients may support it
-    server.notification({
-      method: 'notifications/tools/list_changed',
-      params: {},
-    });
-    console.error(
-      'Remote tools refreshed, sent list_changed notification to client'
-    );
-  } catch (error) {
-    console.error('Failed to send list_changed notification:', error);
-  }
-});
+// 2. Create an MCP tools manager instance
+const toolsManager = new MCPToolsManager(server, remoteApiConfig);
 
 // 4. Handle list tools request - dynamically get all tools from MCPToolsManager
 server.setRequestHandler(ListToolsRequestSchema, async () => {
